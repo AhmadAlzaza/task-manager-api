@@ -1,58 +1,105 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Task Manager API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A RESTful API for managing tasks and categories built with Laravel 12.
 
-## About Laravel
+## Tech Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Laravel** 12
+- **PHP** 8.2
+- **MySQL**
+- **Laravel Sanctum** (Authentication)
+- **PHPUnit** (Testing)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Installation
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+1. Clone the repository
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone https://github.com/AhmadAlzaza/task-manager-api.git
+cd task-manager-api
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+2. Install dependencies
 
-## Contributing
+```bash
+composer install
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+3. Copy environment file
 
-## Code of Conduct
+```bash
+cp .env.example .env
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+4. Generate application key
 
-## Security Vulnerabilities
+```bash
+php artisan key:generate
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+5. Configure database in `.env`
 
-## License
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=task_manager_api
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+6. Run migrations
+
+```bash
+php artisan migrate
+```
+
+7. Start the server
+
+```bash
+php artisan serve
+```
+
+## API Endpoints
+
+### Auth
+
+| Method | Endpoint      | Description         |
+| ------ | ------------- | ------------------- |
+| POST   | /api/register | Register a new user |
+| POST   | /api/login    | Login               |
+| POST   | /api/logout   | Logout              |
+
+### Tasks
+
+| Method | Endpoint        | Description          |
+| ------ | --------------- | -------------------- |
+| GET    | /api/tasks      | Get all tasks (auth) |
+| POST   | /api/tasks      | Create a task (auth) |
+| GET    | /api/tasks/{id} | Get a task (auth)    |
+| PUT    | /api/tasks/{id} | Update a task (auth) |
+| DELETE | /api/tasks/{id} | Delete a task (auth) |
+
+> Filter by status: `/api/tasks?status=pending`
+
+### Categories
+
+| Method | Endpoint             | Description               |
+| ------ | -------------------- | ------------------------- |
+| GET    | /api/categories      | Get all categories (auth) |
+| POST   | /api/categories      | Create a category (auth)  |
+| GET    | /api/categories/{id} | Get a category (auth)     |
+| PUT    | /api/categories/{id} | Update a category (auth)  |
+| DELETE | /api/categories/{id} | Delete a category (auth)  |
+
+## Testing
+
+```bash
+php artisan test
+```
+
+**15 tests, 34 assertions — all passing ✅**
+
+## Postman Collection
+
+Import the collection from: `task-manager-api.postman_collection.json`
