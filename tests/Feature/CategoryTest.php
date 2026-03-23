@@ -13,7 +13,7 @@ class CategoryTest extends TestCase
 
     public function test_user_can_get_categories()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'admin']);
         Category::factory(3)->create();
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/categories');
@@ -24,7 +24,7 @@ class CategoryTest extends TestCase
 
     public function test_user_can_create_category()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'admin']);
         $category = Category::factory()->make();
 
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories', [
@@ -37,7 +37,7 @@ class CategoryTest extends TestCase
 
     public function test_user_can_update_category()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'admin']);
         $category = Category::factory()->create();
         $newName = fake()->word();
         $response = $this->actingAs($user, 'sanctum')->putJson("/api/categories/{$category->id}", [
@@ -50,7 +50,7 @@ class CategoryTest extends TestCase
 
     public function test_user_can_delete_category()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'admin']);
         $category = Category::factory()->create();
 
         $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/categories/{$category->id}");
