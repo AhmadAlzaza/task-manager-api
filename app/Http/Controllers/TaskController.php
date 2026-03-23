@@ -14,7 +14,10 @@ class TaskController extends Controller
     {
         $tasks = Task::with('user', 'categories')
             ->where('user_id', $request->user()->id)
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->when(
+                in_array($request->status, ['pending', 'in_progress', 'completed']),
+                fn($q) => $q->where('status', $request->status)
+            )
             ->paginate(15);
 
         return TaskResource::collection($tasks);
