@@ -11,12 +11,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::apiResource('tasks', TaskController::class);
 
-    Route::get('/categories', [CategoryController::class, 'index']);
-    Route::get('/categories/{category}', [CategoryController::class, 'show']);
+    Route::apiResource('categories', CategoryController::class)->only(['index', 'show']);
 
     Route::middleware('can:manage-categories')->group(function () {
-        Route::post('/categories', [CategoryController::class, 'store']);
-        Route::put('/categories/{category}', [CategoryController::class, 'update']);
-        Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
+        Route::apiResource('categories', CategoryController::class)->only(['store', 'update', 'destroy']);
     });
 });

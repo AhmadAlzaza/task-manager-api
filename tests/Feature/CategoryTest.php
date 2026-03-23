@@ -13,7 +13,7 @@ class CategoryTest extends TestCase
 
     public function test_user_can_get_categories()
     {
-        $user = User::factory()->create(['role' => 'admin']);
+        $user = User::factory()->create();
         Category::factory(3)->create();
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/categories');
