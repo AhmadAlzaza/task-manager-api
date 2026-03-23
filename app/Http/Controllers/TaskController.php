@@ -36,7 +36,7 @@ class TaskController extends Controller
 
         $task->load('user', 'categories');
 
-        return new TaskResource($task);
+        return (new TaskResource($task))->response()->setStatusCode(201);
     }
 
     public function show(Request $request, Task $task)

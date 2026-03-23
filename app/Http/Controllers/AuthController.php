@@ -29,17 +29,17 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request)
     {
-        $user = $request->user();
-
         if (!Auth::attempt($request->only('email', 'password'))) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
+
+        $user = User::where('email', $request->email)->first();
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'token' => $token,
-            'user' =>  new UserResource($user),
+            'user' => new UserResource($user),
         ]);
     }
 

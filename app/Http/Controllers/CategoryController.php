@@ -18,7 +18,7 @@ class CategoryController extends Controller
     public function store(StoreCategoryRequest $request)
     {
         $category = Category::create($request->validated());
-        return new CategoryResource($category);
+        return (new CategoryResource($category))->response()->setStatusCode(201);
     }
 
     public function show(Category $category)

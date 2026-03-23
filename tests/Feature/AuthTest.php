@@ -29,14 +29,13 @@ class AuthTest extends TestCase
     {
         $password = Str::random(12);
         $user = User::factory()->create([
-            'password' => bcrypt($password),
+            'password' => $password,
         ]);
 
         $response = $this->postJson('/api/login', [
             'email' => $user->email,
             'password' => $password,
         ]);
-
         $response->assertStatus(200)
             ->assertJsonStructure(['token', 'user']);
     }
