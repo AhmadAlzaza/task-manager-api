@@ -33,7 +33,8 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
 
-        $user = User::where('email', $request->email)->first();
+        /** @var User $user */
+        $user = Auth::user();
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
