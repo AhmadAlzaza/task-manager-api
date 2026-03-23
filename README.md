@@ -8,6 +8,7 @@ A RESTful API for managing tasks and categories built with Laravel 12.
 - **PHP** 8.2
 - **MySQL**
 - **Laravel Sanctum** (Authentication)
+- **Laravel Gates** (Authorization)
 - **PHPUnit** (Testing)
 
 ## Installation
@@ -46,12 +47,16 @@ DB_PORT=3306
 DB_DATABASE=task_manager_api
 DB_USERNAME=root
 DB_PASSWORD=
+
+ADMIN_EMAIL=admin@admin.com
+ADMIN_PASSWORD=your_password
 ```
 
-6. Run migrations
+6. Run migrations and seed admin user
 
 ```bash
 php artisan migrate
+php artisan db:seed
 ```
 
 7. Start the server
@@ -59,6 +64,13 @@ php artisan migrate
 ```bash
 php artisan serve
 ```
+
+## Roles
+
+| Role  | Permissions                              |
+| ----- | ---------------------------------------- |
+| user  | Manage own tasks, browse categories      |
+| admin | All user permissions + manage categories |
 
 ## API Endpoints
 
@@ -84,15 +96,23 @@ php artisan serve
 
 ### Categories
 
-| Method | Endpoint             | Description               |
-| ------ | -------------------- | ------------------------- |
-| GET    | /api/categories      | Get all categories (auth) |
-| POST   | /api/categories      | Create a category (auth)  |
-| GET    | /api/categories/{id} | Get a category (auth)     |
-| PUT    | /api/categories/{id} | Update a category (auth)  |
-| DELETE | /api/categories/{id} | Delete a category (auth)  |
+| Method | Endpoint             | Description                    |
+| ------ | -------------------- | ------------------------------ |
+| GET    | /api/categories      | Get all categories (auth)      |
+| GET    | /api/categories/{id} | Get a category (auth)          |
+| POST   | /api/categories      | Create a category (admin only) |
+| PUT    | /api/categories/{id} | Update a category (admin only) |
+| DELETE | /api/categories/{id} | Delete a category (admin only) |
 
-## Testing
+## Authentication
+
+All protected endpoints require a Bearer token in the headers:
+
+```
+Authorization: Bearer {your_token}
+```
+
+## Running Tests
 
 ```bash
 php artisan test

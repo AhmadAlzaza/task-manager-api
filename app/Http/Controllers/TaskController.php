@@ -56,7 +56,7 @@ class TaskController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        $task->update($request->only('title', 'description', 'status', 'due_date'));
+        $task->update($request->validated());
 
         if ($request->has('categories')) {
             $task->categories()->sync($request->categories);
