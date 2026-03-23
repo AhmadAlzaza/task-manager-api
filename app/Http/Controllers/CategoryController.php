@@ -23,7 +23,6 @@ class CategoryController extends Controller
 
     public function show(Category $category)
     {
-        $category->load('tasks');
         return new CategoryResource($category);
     }
 
