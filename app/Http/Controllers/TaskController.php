@@ -41,10 +41,7 @@ class TaskController extends Controller
 
     public function show(Request $request, Task $task)
     {
-        if ($task->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
-
+        $this->authorize('view', $task);
         $task->load('user', 'categories');
 
         return new TaskResource($task);
@@ -52,9 +49,7 @@ class TaskController extends Controller
 
     public function update(UpdateTaskRequest $request, Task $task)
     {
-        if ($task->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
+        $this->authorize('update', $task);
 
         $task->update($request->validated());
 
@@ -69,9 +64,7 @@ class TaskController extends Controller
 
     public function destroy(Request $request, Task $task)
     {
-        if ($task->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
+        $this->authorize('delete', $task);
 
         $task->delete();
 
