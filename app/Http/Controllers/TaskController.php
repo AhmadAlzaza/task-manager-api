@@ -7,6 +7,7 @@ use App\Http\Resources\TaskResource;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use Illuminate\Http\Request;
+use App\Actions\CreateTaskAction;
 
 class TaskController extends Controller
 {
@@ -23,18 +24,9 @@ class TaskController extends Controller
         return TaskResource::collection($tasks);
     }
 
-    public function store(StoreTaskRequest $request)
+    public function store(StoreTaskRequest $request, CreateTaskAction $action)
     {
-        $task = Task::create([
-            ...$request->validated(),
-            'user_id' => $request->user()->id,
-        ]);
-
-        if ($request->categories) {
-            $task->categories()->attach($request->categories);
-        }
-
-        $task->load('user', 'categories');
+        $task = $action->execute($request->validated(), $request->user(), $request->input('categories', []));
 
         return (new TaskResource($task))->response()->setStatusCode(201);
     }
