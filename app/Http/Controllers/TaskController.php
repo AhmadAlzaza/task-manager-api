@@ -8,6 +8,7 @@ use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use Illuminate\Http\Request;
 use App\Actions\CreateTaskAction;
+use App\Actions\UpdateTaskAction;
 
 class TaskController extends Controller
 {
@@ -39,19 +40,12 @@ class TaskController extends Controller
         return new TaskResource($task);
     }
 
-    public function update(UpdateTaskRequest $request, Task $task)
+    public function update(UpdateTaskRequest $request, Task $task, UpdateTaskAction $update)
     {
         $this->authorize('update', $task);
+        $newtask = $update->execute($request->validated(), $task, $request->input('categories', []));
 
-        $task->update($request->validated());
-
-        if ($request->has('categories')) {
-            $task->categories()->sync($request->categories);
-        }
-
-        $task->load('user', 'categories');
-
-        return new TaskResource($task);
+        return new TaskResource($newtask);
     }
 
     public function destroy(Request $request, Task $task)
