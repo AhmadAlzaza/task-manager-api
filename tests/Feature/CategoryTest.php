@@ -58,4 +58,35 @@ class CategoryTest extends TestCase
         $response->assertStatus(200)
             ->assertJson(['message' => 'Category deleted successfully']);
     }
+    public function test_user_cannot_create_category()
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $category = Category::factory()->make();
+
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories', [
+            'name' => $category->name,
+        ]);
+
+        $response->assertStatus(403);
+    }
+    public function test_user_cannot_update_category()
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $category = Category::factory()->create();
+        $newName = fake()->word();
+        $response = $this->actingAs($user, 'sanctum')->putJson("/api/categories/{$category->id}", [
+            'name' => $newName
+        ]);
+
+        $response->assertStatus(403);
+    }
+    public function test_user_cannot_delete_category()
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $category = Category::factory()->create();
+
+        $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/categories/{$category->id}");
+
+        $response->assertStatus(403);
+    }
 }

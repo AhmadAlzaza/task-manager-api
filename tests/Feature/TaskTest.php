@@ -66,6 +66,15 @@ class TaskTest extends TestCase
 
         $response->assertStatus(403);
     }
+    public function test_user_cannot_delete_other_users_task()
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $task = Task::factory()->create(['user_id' => $otherUser->id]);
+        $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/tasks/{$task->id}");
+
+        $response->assertStatus(403);
+    }
 
     public function test_user_can_delete_task()
     {
