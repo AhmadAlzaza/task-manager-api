@@ -16,6 +16,8 @@ A RESTful API for managing tasks and categories built with Laravel 12.
 - **Actions** — business logic extracted from controllers (`CreateTaskAction`, `UpdateTaskAction`)
 - **Policies** — authorization rules per model (`TaskPolicy`)
 - **Query Scopes** — reusable query filters (`ownedBy`, `ofStatus`)
+- **Rate Limiting** — brute force protection on login (5 attempts/minute)
+- **Database Indexing** — index on `user_id` in tasks table for query performance
 
 ## Installation
 
@@ -82,11 +84,11 @@ php artisan serve
 
 ### Auth
 
-| Method | Endpoint      | Description         |
-| ------ | ------------- | ------------------- |
-| POST   | /api/register | Register a new user |
-| POST   | /api/login    | Login               |
-| POST   | /api/logout   | Logout              |
+| Method | Endpoint      | Description                          |
+| ------ | ------------- | ------------------------------------ |
+| POST   | /api/register | Register a new user                  |
+| POST   | /api/login    | Login (rate limited: 5 attempts/min) |
+| POST   | /api/logout   | Logout                               |
 
 ### Tasks
 
@@ -120,7 +122,7 @@ All protected endpoints require a Bearer token in the headers:
 php artisan test
 ```
 
-**15 tests, 34 assertions — all passing ✅**
+**19 tests, 38 assertions — all passing ✅**
 
 ## Postman Collection
 
