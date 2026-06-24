@@ -14,12 +14,10 @@ class TaskController extends Controller
 {
     public function index(Request $request)
     {
+        $request->validate(['status' => 'in:pending,in_progress,completed']);
         $tasks = Task::with('user', 'categories')
-            ->where('user_id', $request->user()->id)
-            ->when(
-                in_array($request->status, ['pending', 'in_progress', 'completed']),
-                fn($q) => $q->where('status', $request->status)
-            )
+            ->ownedBy($request->user())
+            ->when($request->status, fn($q) => $q->ofStatus($request->status))
             ->paginate(15);
 
         return TaskResource::collection($tasks);
