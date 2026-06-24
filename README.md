@@ -8,8 +8,14 @@ A RESTful API for managing tasks and categories built with Laravel 12.
 - **PHP** 8.2
 - **MySQL**
 - **Laravel Sanctum** (Authentication)
-- **Laravel Gates** (Authorization)
+- **Laravel Policies** (Authorization)
 - **PHPUnit** (Testing)
+
+## Architecture
+
+- **Actions** — business logic extracted from controllers (`CreateTaskAction`, `UpdateTaskAction`)
+- **Policies** — authorization rules per model (`TaskPolicy`)
+- **Query Scopes** — reusable query filters (`ownedBy`, `ofStatus`)
 
 ## Installation
 
@@ -107,10 +113,6 @@ php artisan serve
 ## Authentication
 
 All protected endpoints require a Bearer token in the headers:
-
-```
-Authorization: Bearer {your_token}
-```
 
 ## Running Tests
 
