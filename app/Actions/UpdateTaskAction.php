@@ -7,12 +7,14 @@ use App\Models\Task;
 class UpdateTaskAction
 {
 
-    public function execute(array $data, Task $task, array $categories = [])
+    public function execute(array $data, Task $task, ?array $categories = null)
     {
         $task->update($data);
-        if ($categories) {
+
+        if ($categories !== null) {
             $task->categories()->sync($categories);
         }
+
         $task->load('user', 'categories');
         return $task;
     }

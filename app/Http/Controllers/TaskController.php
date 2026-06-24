@@ -41,7 +41,12 @@ class TaskController extends Controller
     public function update(UpdateTaskRequest $request, Task $task, UpdateTaskAction $update)
     {
         $this->authorize('update', $task);
-        $newtask = $update->execute($request->validated(), $task, $request->input('categories', []));
+
+        $newtask = $update->execute(
+            $request->validated(),
+            $task,
+            $request->has('categories') ? $request->input('categories', []) : null
+        );
 
         return new TaskResource($newtask);
     }
