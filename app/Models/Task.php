@@ -4,10 +4,9 @@ namespace App\Models;
 
 use App\Policies\TaskPolicy;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
-use Illuminate\Database\Eloquent\Builder;
 
 #[UsePolicy(TaskPolicy::class)]
 class Task extends Model
@@ -21,14 +20,24 @@ class Task extends Model
         'due_date',
         'user_id',
     ];
-    public function scopeOwnedBy(Builder $query, User $user)
+
+    protected function casts(): array
+    {
+        return [
+            'due_date' => 'date',
+        ];
+    }
+
+    public function scopeOwnedBy(Builder $query, User $user): Builder
     {
         return $query->where('user_id', $user->id);
     }
-    public function scopeOfStatus(Builder $query, string $status)
+
+    public function scopeOfStatus(Builder $query, string $status): Builder
     {
         return $query->where('status', $status);
     }
+
     public function user()
     {
         return $this->belongsTo(User::class);
