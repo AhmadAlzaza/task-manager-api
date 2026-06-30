@@ -122,8 +122,4 @@ All protected endpoints require a Bearer token in the headers:
 php artisan test
 ```
 
-**19 tests, 38 assertions — all passing ✅**
-
-## Postman Collection
-
-Import the collection from: `task-manager-api.postman_collection.json`
+**17 tests, 38 assertions — all passing ✅**
