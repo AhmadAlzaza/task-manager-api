@@ -1,11 +1,11 @@
 # Task Manager API
 
-A RESTful API for managing tasks and categories built with Laravel 12.
+A RESTful API for managing tasks and categories built with Laravel 13.
 
 ## Tech Stack
 
-- **Laravel** 12
-- **PHP** 8.2
+- **Laravel** ^13.0
+- **PHP** ^8.3
 - **MySQL**
 - **Laravel Sanctum** (Authentication)
 - **Laravel Policies** (Authorization)
@@ -84,11 +84,11 @@ php artisan serve
 
 ### Auth
 
-| Method | Endpoint      | Description                          |
-| ------ | ------------- | ------------------------------------ |
-| POST   | /api/register | Register a new user                  |
-| POST   | /api/login    | Login (rate limited: 5 attempts/min) |
-| POST   | /api/logout   | Logout                               |
+| Method | Endpoint      | Description                                        |
+| ------ | ------------- | -------------------------------------------------- |
+| POST   | /api/register | Register a new user (rate limited: 5 attempts/min) |
+| POST   | /api/login    | Login (rate limited: 5 attempts/min)               |
+| POST   | /api/logout   | Logout                                             |
 
 ### Tasks
 
