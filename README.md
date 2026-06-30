@@ -122,4 +122,4 @@ All protected endpoints require a Bearer token in the headers:
 php artisan test
 ```
 
-**17 tests, 38 assertions — all passing ✅**
+**21 tests, 44 assertions — all passing ✅**
