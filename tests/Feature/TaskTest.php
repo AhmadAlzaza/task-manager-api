@@ -98,4 +98,24 @@ class TaskTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonCount(2, 'data');
     }
+    public function test_user_can_view_task()
+    {
+        $user = User::factory()->create();
+        $task = Task::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user, 'sanctum')->getJson("/api/tasks/{$task->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonFragment(['id' => $task->id]);
+    }
+    public function test_user_cannot_view_other_users_task()
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $task = Task::factory()->create(['user_id' => $otherUser->id]);
+
+        $response = $this->actingAs($user, 'sanctum')->getJson("/api/tasks/{$task->id}");
+
+        $response->assertStatus(403);
+    }
 }

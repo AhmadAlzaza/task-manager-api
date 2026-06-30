@@ -49,4 +49,29 @@ class AuthTest extends TestCase
         $response->assertStatus(200)
             ->assertJson(['message' => 'Logged out successfully']);
     }
+    public function test_user_cannot_register_with_duplicate_email()
+    {
+        $existingUser = User::factory()->create();
+
+        $response = $this->postJson('/api/register', [
+            'name' => 'New User',
+            'email' => $existingUser->email,
+            'password' => Str::random(12),
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('email');
+    }
+    public function test_user_cannot_login_with_wrong_password()
+    {
+        $user = User::factory()->create(['password' => 'correct-password']);
+
+        $response = $this->postJson('/api/login', [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ]);
+
+        $response->assertStatus(401)
+            ->assertJson(['message' => 'Invalid credentials']);
+    }
 }
