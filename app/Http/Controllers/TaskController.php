@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Task;
-use App\Http\Resources\TaskResource;
-use App\Http\Requests\StoreTaskRequest;
-use App\Http\Requests\UpdateTaskRequest;
-use Illuminate\Http\Request;
 use App\Actions\CreateTaskAction;
 use App\Actions\UpdateTaskAction;
+use App\Http\Requests\StoreTaskRequest;
+use App\Http\Requests\UpdateTaskRequest;
+use App\Http\Resources\TaskResource;
+use App\Models\Task;
+use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
@@ -17,7 +17,7 @@ class TaskController extends Controller
         $request->validate(['status' => 'in:pending,in_progress,completed']);
         $tasks = Task::with('user', 'categories')
             ->ownedBy($request->user())
-            ->when($request->status, fn($q) => $q->ofStatus($request->status))
+            ->when($request->status, fn ($q) => $q->ofStatus($request->status))
             ->paginate(15);
 
         return TaskResource::collection($tasks);

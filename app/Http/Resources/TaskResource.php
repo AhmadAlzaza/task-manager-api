@@ -20,7 +20,7 @@ class TaskResource extends JsonResource
             'description' => $this->description,
             'status' => $this->status,
             'due_date' => $this->due_date,
-            'user_name' => $this->whenLoaded('user', fn() => $this->user->name),
+            'user_name' => $this->whenLoaded('user', fn () => $this->user->name),
             'categories' => CategoryResource::collection($this->whenLoaded('categories')),
         ];
     }

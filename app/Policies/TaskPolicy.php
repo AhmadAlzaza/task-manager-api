@@ -7,8 +7,6 @@ use App\Models\User;
 
 class TaskPolicy
 {
-
-
     /**
      * Determine whether the user can view the model.
      */
@@ -16,6 +14,7 @@ class TaskPolicy
     {
         return $this->isOwner($user, $task);
     }
+
     /**
      * Determine whether the user can update the model.
      */
@@ -31,6 +30,7 @@ class TaskPolicy
     {
         return $this->isOwner($user, $task);
     }
+
     private function isOwner(User $user, Task $task): bool
     {
         return $user->id === $task->user_id;

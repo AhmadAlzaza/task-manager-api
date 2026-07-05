@@ -49,6 +49,7 @@ class AuthTest extends TestCase
         $response->assertStatus(200)
             ->assertJson(['message' => 'Logged out successfully']);
     }
+
     public function test_user_cannot_register_with_duplicate_email()
     {
         $existingUser = User::factory()->create();
@@ -62,6 +63,7 @@ class AuthTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors('email');
     }
+
     public function test_user_cannot_login_with_wrong_password()
     {
         $user = User::factory()->create(['password' => 'correct-password']);

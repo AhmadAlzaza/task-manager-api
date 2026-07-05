@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Category;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -41,7 +41,7 @@ class CategoryTest extends TestCase
         $category = Category::factory()->create();
         $newName = fake()->word();
         $response = $this->actingAs($user, 'sanctum')->putJson("/api/categories/{$category->id}", [
-            'name' => $newName
+            'name' => $newName,
         ]);
 
         $response->assertStatus(200)
@@ -58,6 +58,7 @@ class CategoryTest extends TestCase
         $response->assertStatus(200)
             ->assertJson(['message' => 'Category deleted successfully']);
     }
+
     public function test_user_cannot_create_category()
     {
         $user = User::factory()->create(['role' => 'user']);
@@ -69,17 +70,19 @@ class CategoryTest extends TestCase
 
         $response->assertStatus(403);
     }
+
     public function test_user_cannot_update_category()
     {
         $user = User::factory()->create(['role' => 'user']);
         $category = Category::factory()->create();
         $newName = fake()->word();
         $response = $this->actingAs($user, 'sanctum')->putJson("/api/categories/{$category->id}", [
-            'name' => $newName
+            'name' => $newName,
         ]);
 
         $response->assertStatus(403);
     }
+
     public function test_user_cannot_delete_category()
     {
         $user = User::factory()->create(['role' => 'user']);

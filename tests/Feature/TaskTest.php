@@ -2,9 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Task;
-use App\Models\Category;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -66,6 +65,7 @@ class TaskTest extends TestCase
 
         $response->assertStatus(403);
     }
+
     public function test_user_cannot_delete_other_users_task()
     {
         $user = User::factory()->create();
@@ -98,6 +98,7 @@ class TaskTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonCount(2, 'data');
     }
+
     public function test_user_can_view_task()
     {
         $user = User::factory()->create();
@@ -108,6 +109,7 @@ class TaskTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonFragment(['id' => $task->id]);
     }
+
     public function test_user_cannot_view_other_users_task()
     {
         $user = User::factory()->create();

@@ -6,7 +6,6 @@ use App\Models\Task;
 
 class UpdateTaskAction
 {
-
     public function execute(array $data, Task $task, ?array $categories = null)
     {
         $task->update($data);
@@ -16,6 +15,7 @@ class UpdateTaskAction
         }
 
         $task->load('user', 'categories');
+
         return $task;
     }
 }

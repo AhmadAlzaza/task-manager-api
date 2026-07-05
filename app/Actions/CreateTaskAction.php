@@ -2,12 +2,11 @@
 
 namespace App\Actions;
 
-use App\Models\User;
 use App\Models\Task;
+use App\Models\User;
 
 class CreateTaskAction
 {
-
     public function execute(array $data, User $user, array $categories = [])
     {
         $task = Task::create([
@@ -18,6 +17,7 @@ class CreateTaskAction
             $task->categories()->attach($categories);
         }
         $task->load('user', 'categories');
+
         return $task;
     }
 }
