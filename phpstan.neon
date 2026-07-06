@@ -1,0 +1,13 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - app
+        - tests
+    scanFiles:
+        - _ide_helper.php
+    universalObjectCratesClasses:
+        - Illuminate\Http\Request
+        - Illuminate\Http\Client\Request

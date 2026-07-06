@@ -4,6 +4,13 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * @property string $name
+ * @property \App\Models\Category $category
+ */
+/**
+ * @mixin \Illuminate\Http\Request
+ */
 class StoreCategoryRequest extends FormRequest
 {
     public function authorize(): bool
