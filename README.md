@@ -123,3 +123,5 @@ php artisan test
 ```
 
 **21 tests, 44 assertions — all passing ✅**
+
+<!-- test branch protection -->
