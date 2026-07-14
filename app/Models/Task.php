@@ -5,23 +5,26 @@ namespace App\Models;
 use App\Policies\TaskPolicy;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
- * @property-read \App\Models\User $user
+ * @property-read User $user
  * @property int $id
  * @property int $user_id
  * @property string $title
  * @property string|null $description
  * @property string $status
- * @property \Illuminate\Support\Carbon|null $due_date
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Category> $categories
+ * @property Carbon|null $due_date
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, Category> $categories
  * @property-read int|null $categories_count
- * @property-read \App\Models\User $user
+ * @property-read User $user
+ *
  * @method static \Database\Factories\TaskFactory factory($count = null, $state = [])
  * @method static Builder<static>|Task newModelQuery()
  * @method static Builder<static>|Task newQuery()
@@ -36,10 +39,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static Builder<static>|Task whereTitle($value)
  * @method static Builder<static>|Task whereUpdatedAt($value)
  * @method static Builder<static>|Task whereUserId($value)
- * @mixin \Illuminate\Database\Eloquent\Model
+ *
+ * @mixin Model
  */
-
-
 #[UsePolicy(TaskPolicy::class)]
 class Task extends Model
 {

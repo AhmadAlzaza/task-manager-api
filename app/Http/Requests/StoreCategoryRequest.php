@@ -2,14 +2,16 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Request;
 
 /**
  * @property string $name
- * @property \App\Models\Category $category
+ * @property Category $category
  */
 /**
- * @mixin \Illuminate\Http\Request
+ * @mixin Request
  */
 class StoreCategoryRequest extends FormRequest
 {

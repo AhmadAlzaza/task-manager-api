@@ -33,6 +33,7 @@ class CategoryTest extends TestCase
             ->assertJsonPath('data.id', $category->id)
             ->assertJsonPath('data.name', $category->name);
     }
+
     public function test_user_can_create_category()
     {
         $user = User::factory()->create(['role' => 'admin']);

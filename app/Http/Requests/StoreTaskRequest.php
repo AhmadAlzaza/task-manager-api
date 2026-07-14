@@ -3,9 +3,10 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Request;
 
 /**
- * @mixin \Illuminate\Http\Request
+ * @mixin Request
  */
 class StoreTaskRequest extends FormRequest
 {

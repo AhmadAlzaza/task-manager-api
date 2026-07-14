@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use App\Models\Category;
 
 class TaskTest extends TestCase
 {
@@ -121,6 +121,7 @@ class TaskTest extends TestCase
 
         $response->assertStatus(403);
     }
+
     public function test_user_can_create_task_with_categories()
     {
         $user = User::factory()->create();
@@ -138,6 +139,7 @@ class TaskTest extends TestCase
         $response->assertStatus(201)
             ->assertJsonCount(2, 'data.categories');
     }
+
     public function test_user_can_update_task_categories()
     {
         $user = User::factory()->create();

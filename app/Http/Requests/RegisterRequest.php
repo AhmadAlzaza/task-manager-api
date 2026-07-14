@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Request;
 
 /**
  * @property string $name
@@ -10,7 +11,7 @@ use Illuminate\Foundation\Http\FormRequest;
  * @property string $password
  */
 /**
- * @mixin \Illuminate\Http\Request
+ * @mixin Request
  */
 class RegisterRequest extends FormRequest
 {

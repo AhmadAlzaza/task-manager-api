@@ -17,7 +17,7 @@ class TaskController extends Controller
         $request->validate(['status' => 'in:pending,in_progress,completed']);
         $tasks = Task::with('user', 'categories')
             ->ownedBy($request->user())
-            ->when($request->input('status'), fn($q) => $q->ofStatus($request->input('status')))
+            ->when($request->input('status'), fn ($q) => $q->ofStatus($request->input('status')))
             ->paginate(15);
 
         return TaskResource::collection($tasks);
