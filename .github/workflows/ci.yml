@@ -18,9 +18,16 @@ jobs:
         with:
           php-version: "8.3"
           extensions: mbstring, pdo_sqlite, bcmath
+          coverage: xdebug
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
+
+      - name: Run Pint (code style check)
+        run: ./vendor/bin/pint --test
+
+      - name: Run Larastan (static analysis)
+        run: ./vendor/bin/phpstan analyse
 
       - name: Copy .env
         run: cp .env.example .env
@@ -28,9 +35,7 @@ jobs:
       - name: Generate app key
         run: php artisan key:generate
 
-      - name: Run tests
-        run: php artisan test
-      - name: Run Pint (code style check)
-        run: ./vendor/bin/pint --test
-      - name: Run Larastan (static analysis)
-        run: ./vendor/bin/phpstan analyse
+      - name: Run tests with coverage
+        run: php artisan test --coverage --min=85
+        env:
+          XDEBUG_MODE: coverage
