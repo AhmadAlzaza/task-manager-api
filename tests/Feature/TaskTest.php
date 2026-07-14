@@ -6,6 +6,7 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use App\Models\Category;
 
 class TaskTest extends TestCase
 {
@@ -119,5 +120,43 @@ class TaskTest extends TestCase
         $response = $this->actingAs($user, 'sanctum')->getJson("/api/tasks/{$task->id}");
 
         $response->assertStatus(403);
+    }
+    public function test_user_can_create_task_with_categories()
+    {
+        $user = User::factory()->create();
+        $categories = Category::factory(2)->create();
+        $task = Task::factory()->make();
+
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/tasks', [
+            'title' => $task->title,
+            'description' => $task->description,
+            'status' => $task->status,
+            'due_date' => $task->due_date->format('Y-m-d'),
+            'categories' => $categories->pluck('id')->toArray(),
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonCount(2, 'data.categories');
+    }
+    public function test_user_can_update_task_categories()
+    {
+        $user = User::factory()->create();
+        $task = Task::factory()->create(['user_id' => $user->id]);
+        $oldCategory = Category::factory()->create();
+        $task->categories()->attach($oldCategory);
+
+        $newCategories = Category::factory(2)->create();
+
+        $response = $this->actingAs($user, 'sanctum')->putJson("/api/tasks/{$task->id}", [
+            'categories' => $newCategories->pluck('id')->toArray(),
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonCount(2, 'data.categories');
+
+        $this->assertDatabaseMissing('category_task', [
+            'task_id' => $task->id,
+            'category_id' => $oldCategory->id,
+        ]);
     }
 }

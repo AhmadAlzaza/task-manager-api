@@ -22,6 +22,17 @@ class CategoryTest extends TestCase
             ->assertJsonCount(3, 'data');
     }
 
+    public function test_user_can_view_single_category()
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->create();
+
+        $response = $this->actingAs($user, 'sanctum')->getJson("/api/categories/{$category->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.id', $category->id)
+            ->assertJsonPath('data.name', $category->name);
+    }
     public function test_user_can_create_category()
     {
         $user = User::factory()->create(['role' => 'admin']);
