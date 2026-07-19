@@ -13,17 +13,18 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        if (app()->environment('production') && ! env('ADMIN_PASSWORD')) {
+        if (app()->environment('production') && ! config('admin.password')) {
             throw new \RuntimeException(
                 'ADMIN_PASSWORD must be set in .env to run AdminSeeder in production.'
             );
         }
 
-        User::forceCreate([
-            'name' => env('ADMIN_NAME', 'Admin'),
-            'email' => env('ADMIN_EMAIL', 'admin@example.com'),
-            'password' => Hash::make(env('ADMIN_PASSWORD', 'password')),
+        $admin = User::firstOrNew(['email' => config('admin.email')]);
+
+        $admin->forceFill([
+            'name' => config('admin.name'),
+            'password' => Hash::make(config('admin.password') ?? 'password'),
             'role' => 'admin',
-        ]);
+        ])->save();
     }
 }
