@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendWelcomeEmailJob;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -75,5 +77,22 @@ class AuthTest extends TestCase
 
         $response->assertStatus(401)
             ->assertJson(['message' => 'Invalid credentials']);
+    }
+
+    public function test_welcome_email_job_is_dispatched_on_register()
+    {
+        Bus::fake();  // @phpstan-ignore staticMethod.notFound
+
+        $user = User::factory()->make();
+
+        $this->postJson('/api/register', [
+            'name' => $user->name,
+            'email' => $user->email,
+            'password' => Str::random(12),
+        ])->assertStatus(201);
+
+        Bus::assertDispatched(SendWelcomeEmailJob::class, function ($job) use ($user) {
+            return $job->user->email === $user->email;
+        });
     }
 }
