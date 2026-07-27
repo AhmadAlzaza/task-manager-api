@@ -8,6 +8,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Jobs\SendWelcomeEmailJob;
 
 class AuthController extends Controller
 {
@@ -17,8 +18,9 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => $request->password,
-
         ]);
+
+        SendWelcomeEmailJob::dispatch($user);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
