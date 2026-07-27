@@ -81,7 +81,7 @@ class AuthTest extends TestCase
 
     public function test_welcome_email_job_is_dispatched_on_register()
     {
-        Bus::fake();
+        Bus::fake();  // @phpstan-ignore staticMethod.notFound
 
         $user = User::factory()->make();
 
