@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendWelcomeEmailJob;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Str;
 use Tests\TestCase;
-use App\Jobs\SendWelcomeEmailJob;
-use Illuminate\Support\Facades\Bus;
 
 class AuthTest extends TestCase
 {
@@ -78,6 +78,7 @@ class AuthTest extends TestCase
         $response->assertStatus(401)
             ->assertJson(['message' => 'Invalid credentials']);
     }
+
     public function test_welcome_email_job_is_dispatched_on_register()
     {
         Bus::fake();
