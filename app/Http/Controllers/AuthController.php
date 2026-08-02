@@ -9,20 +9,25 @@ use App\Jobs\SendWelcomeEmailJob;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
     public function register(RegisterRequest $request)
     {
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => $request->password,
-        ]);
+        [$user, $token] = DB::transaction(function () use ($request) {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => $request->password,
+            ]);
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return [$user, $token];
+        });
 
         SendWelcomeEmailJob::dispatch($user);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'token' => $token,

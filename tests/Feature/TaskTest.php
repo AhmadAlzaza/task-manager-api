@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\CreateTaskAction;
 use App\Models\Category;
 use App\Models\Task;
 use App\Models\User;
@@ -160,5 +161,24 @@ class TaskTest extends TestCase
             'task_id' => $task->id,
             'category_id' => $oldCategory->id,
         ]);
+    }
+
+    public function test_task_creation_rolls_back_if_category_attach_fails()
+    {
+        $user = User::factory()->create();
+        $task = Task::factory()->make();
+
+        try {
+            (new CreateTaskAction)->execute([
+                'title' => $task->title,
+                'description' => $task->description,
+                'status' => $task->status,
+                'due_date' => $task->due_date,
+            ], $user, [999999]); // category id غير موجود → foreign key violation
+        } catch (\Throwable) {
+            // متوقع
+        }
+
+        $this->assertDatabaseMissing('tasks', ['title' => $task->title]);
     }
 }
