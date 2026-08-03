@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\UserRegistered;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
-use App\Jobs\SendWelcomeEmailJob;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,7 +27,7 @@ class AuthController extends Controller
             return [$user, $token];
         });
 
-        SendWelcomeEmailJob::dispatch($user);
+        event(new UserRegistered($user));
 
         return response()->json([
             'token' => $token,

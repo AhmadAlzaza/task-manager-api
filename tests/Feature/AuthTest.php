@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Events\UserRegistered;
 use App\Jobs\SendWelcomeEmailJob;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -93,6 +95,23 @@ class AuthTest extends TestCase
 
         Bus::assertDispatched(SendWelcomeEmailJob::class, function ($job) use ($user) {
             return $job->user->email === $user->email;
+        });
+    }
+
+    public function test_user_registered_event_is_dispatched_on_register()
+    {
+        Event::fake([UserRegistered::class]); // @phpstan-ignore staticMethod.notFound
+
+        $user = User::factory()->make();
+
+        $this->postJson('/api/register', [
+            'name' => $user->name,
+            'email' => $user->email,
+            'password' => Str::random(12),
+        ])->assertStatus(201);
+
+        Event::assertDispatched(UserRegistered::class, function ($event) use ($user) {
+            return $event->user->email === $user->email;
         });
     }
 }
