@@ -4,20 +4,25 @@ namespace App\Actions;
 
 use App\Models\Task;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class CreateTaskAction
 {
-    public function execute(array $data, User $user, array $categories = [])
+    public function execute(array $data, User $user, array $categories = []): Task
     {
-        $task = Task::create([
-            ...$data,
-            'user_id' => $user->id,
-        ]);
-        if ($categories) {
-            $task->categories()->attach($categories);
-        }
-        $task->load('user', 'categories');
+        return DB::transaction(function () use ($data, $user, $categories) {
+            $task = Task::create([
+                ...$data,
+                'user_id' => $user->id,
+            ]);
 
-        return $task;
+            if ($categories) {
+                $task->categories()->attach($categories);
+            }
+
+            $task->load('user', 'categories');
+
+            return $task;
+        });
     }
 }
