@@ -8,6 +8,11 @@ use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use Illuminate\Support\Facades\Cache;
 
+/**
+ * @group Categories
+ * القراءة (index, show) لأي مستخدم مسجّل.
+ * الكتابة (store, update, destroy) لـ role=admin فقط — 403 لغيره.
+ */
 class CategoryController extends Controller
 {
     private const CACHE_KEY = 'categories.all';

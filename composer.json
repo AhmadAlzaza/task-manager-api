@@ -15,6 +15,7 @@
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.7",
         "fakerphp/faker": "^1.23",
+        "knuckleswtf/scribe": "^5.11",
         "larastan/larastan": "^3.10",
         "laravel/pail": "^1.2.5",
         "laravel/pint": "^1.27",
@@ -73,7 +74,10 @@
     "extra": {
         "laravel": {
             "dont-discover": []
-        }
+        },
+        "allow-plugins": {
+        "phpstan/extension-installer": true
+    }
     },
     "config": {
         "optimize-autoloader": true,

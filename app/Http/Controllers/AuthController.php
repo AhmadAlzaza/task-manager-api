@@ -11,8 +11,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
+/** @group Authentication */
 class AuthController extends Controller
 {
+    /**
+     * @unauthenticated
+     */
     public function register(RegisterRequest $request)
     {
         [$user, $token] = DB::transaction(function () use ($request) {
@@ -34,6 +38,26 @@ class AuthController extends Controller
             'user' => new UserResource($user),
         ], 201);
     }
+
+    /**
+     * @unauthenticated
+     *
+     * @bodyParam email string required User email. Example: admin@test.com
+     * @bodyParam password string required User password. Example: password
+     *
+     * @response 200 {
+     *   "token": "1|abcdefghijklmnopqrstuvwxyz",
+     *   "user": {
+     *     "id": 1,
+     *     "name": "Admin",
+     *     "email": "admin@test.com"
+     *   }
+     * }
+     *
+     * @response 401 {
+     *   "message": "Invalid credentials"
+     * }
+     */
 
     public function login(LoginRequest $request)
     {
