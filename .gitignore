@@ -24,3 +24,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 task_manager_api
+
+.scribe/
+resources/views/scribe/
+storage/app/private/scribe/
