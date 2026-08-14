@@ -19,7 +19,7 @@ class AuthTest extends TestCase
     {
         $user = User::factory()->make();
 
-        $response = $this->postJson('/api/register', [
+        $response = $this->postJson('/api/v1/register', [
             'name' => $user->name,
             'email' => $user->email,
             'password' => Str::random(12),
@@ -36,7 +36,7 @@ class AuthTest extends TestCase
             'password' => $password,
         ]);
 
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson('/api/v1/login', [
             'email' => $user->email,
             'password' => $password,
         ]);
@@ -48,7 +48,7 @@ class AuthTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user, 'sanctum')->postJson('/api/logout');
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/logout');
 
         $response->assertStatus(200)
             ->assertJson(['message' => 'Logged out successfully']);
@@ -58,7 +58,7 @@ class AuthTest extends TestCase
     {
         $existingUser = User::factory()->create();
 
-        $response = $this->postJson('/api/register', [
+        $response = $this->postJson('/api/v1/register', [
             'name' => 'New User',
             'email' => $existingUser->email,
             'password' => Str::random(12),
@@ -72,7 +72,7 @@ class AuthTest extends TestCase
     {
         $user = User::factory()->create(['password' => 'correct-password']);
 
-        $response = $this->postJson('/api/login', [
+        $response = $this->postJson('/api/v1/login', [
             'email' => $user->email,
             'password' => 'wrong-password',
         ]);
@@ -87,7 +87,7 @@ class AuthTest extends TestCase
 
         $user = User::factory()->make();
 
-        $this->postJson('/api/register', [
+        $this->postJson('/api/v1/register', [
             'name' => $user->name,
             'email' => $user->email,
             'password' => Str::random(12),
@@ -104,7 +104,7 @@ class AuthTest extends TestCase
 
         $user = User::factory()->make();
 
-        $this->postJson('/api/register', [
+        $this->postJson('/api/v1/register', [
             'name' => $user->name,
             'email' => $user->email,
             'password' => Str::random(12),
