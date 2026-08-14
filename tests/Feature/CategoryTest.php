@@ -16,7 +16,7 @@ class CategoryTest extends TestCase
         $user = User::factory()->create();
         Category::factory(3)->create();
 
-        $response = $this->actingAs($user, 'sanctum')->getJson('/api/categories');
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/categories');
 
         $response->assertStatus(200)
             ->assertJsonCount(3, 'data');
@@ -27,7 +27,7 @@ class CategoryTest extends TestCase
         $user = User::factory()->create();
         $category = Category::factory()->create();
 
-        $response = $this->actingAs($user, 'sanctum')->getJson("/api/categories/{$category->id}");
+        $response = $this->actingAs($user, 'sanctum')->getJson("/api/v1/categories/{$category->id}");
 
         $response->assertStatus(200)
             ->assertJsonPath('data.id', $category->id)
@@ -39,7 +39,7 @@ class CategoryTest extends TestCase
         $user = User::factory()->create(['role' => 'admin']);
         $category = Category::factory()->make();
 
-        $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories', [
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/categories', [
             'name' => $category->name,
         ]);
 
@@ -52,7 +52,7 @@ class CategoryTest extends TestCase
         $user = User::factory()->create(['role' => 'admin']);
         $category = Category::factory()->create();
         $newName = fake()->word();
-        $response = $this->actingAs($user, 'sanctum')->putJson("/api/categories/{$category->id}", [
+        $response = $this->actingAs($user, 'sanctum')->putJson("/api/v1/categories/{$category->id}", [
             'name' => $newName,
         ]);
 
@@ -65,7 +65,7 @@ class CategoryTest extends TestCase
         $user = User::factory()->create(['role' => 'admin']);
         $category = Category::factory()->create();
 
-        $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/categories/{$category->id}");
+        $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/categories/{$category->id}");
 
         $response->assertStatus(200)
             ->assertJson(['message' => 'Category deleted successfully']);
@@ -76,7 +76,7 @@ class CategoryTest extends TestCase
         $user = User::factory()->create(['role' => 'user']);
         $category = Category::factory()->make();
 
-        $response = $this->actingAs($user, 'sanctum')->postJson('/api/categories', [
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/categories', [
             'name' => $category->name,
         ]);
 
@@ -88,7 +88,7 @@ class CategoryTest extends TestCase
         $user = User::factory()->create(['role' => 'user']);
         $category = Category::factory()->create();
         $newName = fake()->word();
-        $response = $this->actingAs($user, 'sanctum')->putJson("/api/categories/{$category->id}", [
+        $response = $this->actingAs($user, 'sanctum')->putJson("/api/v1/categories/{$category->id}", [
             'name' => $newName,
         ]);
 
@@ -100,7 +100,7 @@ class CategoryTest extends TestCase
         $user = User::factory()->create(['role' => 'user']);
         $category = Category::factory()->create();
 
-        $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/categories/{$category->id}");
+        $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/categories/{$category->id}");
 
         $response->assertStatus(403);
     }

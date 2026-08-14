@@ -18,7 +18,7 @@ class TaskTest extends TestCase
         $user = User::factory()->create();
         $task = Task::factory()->make();
 
-        $response = $this->actingAs($user, 'sanctum')->postJson('/api/tasks', [
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/tasks', [
             'title' => $task->title,
             'description' => $task->description,
             'status' => $task->status,
@@ -34,7 +34,7 @@ class TaskTest extends TestCase
         $user = User::factory()->create();
         Task::factory(3)->create(['user_id' => $user->id]);
 
-        $response = $this->actingAs($user, 'sanctum')->getJson('/api/tasks');
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks');
 
         $response->assertStatus(200)
             ->assertJsonCount(3, 'data');
@@ -46,7 +46,7 @@ class TaskTest extends TestCase
         $task = Task::factory()->create(['user_id' => $user->id]);
         $statuses = ['pending', 'in_progress', 'completed'];
         $newStatus = fake()->randomElement($statuses);
-        $response = $this->actingAs($user, 'sanctum')->putJson("/api/tasks/{$task->id}", [
+        $response = $this->actingAs($user, 'sanctum')->putJson("/api/v1/tasks/{$task->id}", [
             'status' => $newStatus,
         ]);
 
@@ -61,7 +61,7 @@ class TaskTest extends TestCase
         $task = Task::factory()->create(['user_id' => $otherUser->id]);
         $statuses = ['pending', 'in_progress', 'completed'];
         $newStatus = fake()->randomElement($statuses);
-        $response = $this->actingAs($user, 'sanctum')->putJson("/api/tasks/{$task->id}", [
+        $response = $this->actingAs($user, 'sanctum')->putJson("/api/v1/tasks/{$task->id}", [
             'status' => $newStatus,
         ]);
 
@@ -73,7 +73,7 @@ class TaskTest extends TestCase
         $user = User::factory()->create();
         $otherUser = User::factory()->create();
         $task = Task::factory()->create(['user_id' => $otherUser->id]);
-        $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/tasks/{$task->id}");
+        $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/tasks/{$task->id}");
 
         $response->assertStatus(403);
     }
@@ -83,7 +83,7 @@ class TaskTest extends TestCase
         $user = User::factory()->create();
         $task = Task::factory()->create(['user_id' => $user->id]);
 
-        $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/tasks/{$task->id}");
+        $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/tasks/{$task->id}");
 
         $response->assertStatus(200)
             ->assertJson(['message' => 'Task deleted successfully']);
@@ -95,7 +95,7 @@ class TaskTest extends TestCase
         Task::factory(2)->create(['user_id' => $user->id, 'status' => 'pending']);
         Task::factory(3)->create(['user_id' => $user->id, 'status' => 'completed']);
 
-        $response = $this->actingAs($user, 'sanctum')->getJson('/api/tasks?status=pending');
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks?status=pending');
 
         $response->assertStatus(200)
             ->assertJsonCount(2, 'data');
@@ -106,7 +106,7 @@ class TaskTest extends TestCase
         $user = User::factory()->create();
         $task = Task::factory()->create(['user_id' => $user->id]);
 
-        $response = $this->actingAs($user, 'sanctum')->getJson("/api/tasks/{$task->id}");
+        $response = $this->actingAs($user, 'sanctum')->getJson("/api/v1/tasks/{$task->id}");
 
         $response->assertStatus(200)
             ->assertJsonFragment(['id' => $task->id]);
@@ -118,7 +118,7 @@ class TaskTest extends TestCase
         $otherUser = User::factory()->create();
         $task = Task::factory()->create(['user_id' => $otherUser->id]);
 
-        $response = $this->actingAs($user, 'sanctum')->getJson("/api/tasks/{$task->id}");
+        $response = $this->actingAs($user, 'sanctum')->getJson("/api/v1/tasks/{$task->id}");
 
         $response->assertStatus(403);
     }
@@ -129,7 +129,7 @@ class TaskTest extends TestCase
         $categories = Category::factory(2)->create();
         $task = Task::factory()->make();
 
-        $response = $this->actingAs($user, 'sanctum')->postJson('/api/tasks', [
+        $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/tasks', [
             'title' => $task->title,
             'description' => $task->description,
             'status' => $task->status,
@@ -150,7 +150,7 @@ class TaskTest extends TestCase
 
         $newCategories = Category::factory(2)->create();
 
-        $response = $this->actingAs($user, 'sanctum')->putJson("/api/tasks/{$task->id}", [
+        $response = $this->actingAs($user, 'sanctum')->putJson("/api/v1/tasks/{$task->id}", [
             'categories' => $newCategories->pluck('id')->toArray(),
         ]);
 
