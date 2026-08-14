@@ -53,12 +53,10 @@ class AuthController extends Controller
      *     "email": "admin@test.com"
      *   }
      * }
-     *
      * @response 401 {
      *   "message": "Invalid credentials"
      * }
      */
-
     public function login(LoginRequest $request)
     {
         if (! Auth::attempt($request->only('email', 'password'))) {
