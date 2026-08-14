@@ -28,3 +28,11 @@ task_manager_api
 /.scribe/
 /public/vendor/scribe/
 /resources/views/scribe/
+# IDE helper (regenerate locally: php artisan ide-helper:generate && php artisan ide-helper:meta)
+/_ide_helper.php
+/_ide_helper_models.php
+/.phpstorm.meta.php
+
+# PHPUnit coverage report (regenerate: php artisan test --coverage-html coverage-report)
+/coverage-report/
+
