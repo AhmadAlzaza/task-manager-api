@@ -11,3 +11,11 @@ parameters:
     universalObjectCratesClasses:
         - Illuminate\Http\Request
         - Illuminate\Http\Client\Request
+    ignoreErrors:
+        # Larastan 3.10 doesn't yet resolve these native Request/FormRequest
+        # methods after Laravel 13's service-container refactor, even though
+        # they exist at runtime (Illuminate\Http\Concerns\InteractsWithInput).
+        # Re-check and remove once Larastan ships full Laravel 13 support:
+        # https://github.com/larastan/larastan/issues
+        - identifier: method.notFound
+          message: '#Call to an undefined method (Illuminate\\Http\\Request|App\\Http\\Requests\\LoginRequest|App\\Http\\Requests\\StoreTaskRequest|App\\Http\\Requests\\UpdateTaskRequest)::(input|has|only|user)\(\)#'
