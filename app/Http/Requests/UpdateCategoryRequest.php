@@ -4,16 +4,11 @@ namespace App\Http\Requests;
 
 use App\Models\Category;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
- * @mixin Request
- */
-/**
- * @property string $name
- */
-/**
  * @property Category $category
+ * @property string $name
  */
 class UpdateCategoryRequest extends FormRequest
 {
@@ -25,7 +20,14 @@ class UpdateCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'sometimes|required|string|max:255|unique:categories,name,'.$this->category->id,
+            'name' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('categories', 'name')
+                    ->ignore($this->category),
+            ],
         ];
     }
 }
