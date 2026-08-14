@@ -24,3 +24,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 task_manager_api
+# Scribe generated docs (regenerate via php artisan scribe:generate)
+/.scribe/
+/public/vendor/scribe/
+/resources/views/scribe/
