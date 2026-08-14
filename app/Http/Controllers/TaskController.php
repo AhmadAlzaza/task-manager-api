@@ -10,6 +10,10 @@ use App\Http\Resources\TaskResource;
 use App\Models\Task;
 use Illuminate\Http\Request;
 
+/**
+ * @group Tasks
+ * كل العمليات محصورة بمالك الـ task (TaskPolicy).
+ */
 class TaskController extends Controller
 {
     public function index(Request $request)
@@ -23,6 +27,9 @@ class TaskController extends Controller
         return TaskResource::collection($tasks);
     }
 
+    /**
+     * @bodyParam categories integer[] optional قائمة IDs للـ categories. Example: [1]
+     */
     public function store(StoreTaskRequest $request, CreateTaskAction $action)
     {
         $task = $action->execute($request->validated(), $request->user(), $request->input('categories', []));
