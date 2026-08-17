@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\CreateTaskAction;
 use App\Actions\UpdateTaskAction;
+use App\Http\Requests\IndexTaskRequest;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
@@ -12,17 +13,15 @@ use Illuminate\Http\Request;
 
 /**
  * @group Tasks
- * كل العمليات محصورة بمالك الـ task (TaskPolicy).
  */
 class TaskController extends Controller
 {
-    public function index(Request $request)
+    public function index(IndexTaskRequest $request)
     {
-        $request->validate(['status' => 'in:pending,in_progress,completed']);
         $tasks = Task::with('user', 'categories')
             ->ownedBy($request->user())
             ->when($request->input('status'), fn ($q) => $q->ofStatus($request->input('status')))
-            ->paginate(15);
+            ->paginate($request->input('per_page', 15)); // استخدام per_page
 
         return TaskResource::collection($tasks);
     }
