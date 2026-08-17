@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Gate;
 use Tests\TestCase;
 
 class TaskTest extends TestCase
@@ -211,13 +212,21 @@ class TaskTest extends TestCase
         $response = $this->actingAs($userA, 'sanctum')
             ->putJson("/api/v1/tasks/{$task->id}", [
                 'title' => 'Updated Title',
-                'user_id' => $userB->id,  // ← محاولة نقل الملكية
+                'user_id' => $userB->id,
             ]);
 
         $response->assertStatus(200);
 
         $task->refresh();
-        // الملكية يجب ألا تتغير
         $this->assertEquals($userA->id, $task->user_id);
+    }
+
+    public function test_authenticated_user_is_authorized_to_create_tasks()
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum');
+
+        $this->assertTrue(Gate::forUser($user)->allows('create', Task::class));
     }
 }

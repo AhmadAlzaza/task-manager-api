@@ -21,7 +21,7 @@ class TaskController extends Controller
         $tasks = Task::with('user', 'categories')
             ->ownedBy($request->user())
             ->when($request->input('status'), fn ($q) => $q->ofStatus($request->input('status')))
-            ->paginate($request->input('per_page', 15)); // استخدام per_page
+            ->paginate($request->input('per_page', 15));
 
         return TaskResource::collection($tasks);
     }
@@ -31,6 +31,8 @@ class TaskController extends Controller
      */
     public function store(StoreTaskRequest $request, CreateTaskAction $action)
     {
+        $this->authorize('create', Task::class);
+
         $task = $action->execute($request->validated(), $request->user(), $request->input('categories', []));
 
         return (new TaskResource($task))->response()->setStatusCode(201);
