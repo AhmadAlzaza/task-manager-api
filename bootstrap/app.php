@@ -1,9 +1,11 @@
 <?php
 
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -16,9 +18,35 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->render(function (NotFoundHttpException $e, $request) {
+
+        $exceptions->render(function (ModelNotFoundException $e, $request) {
             if ($request->is('api/*')) {
-                return response()->json(['message' => 'Not Found'], 404);
+                return response()->json([
+                    'message' => 'Resource not found.',
+                ], 404);
+            }
+        });
+
+        // 2. أخطاء الصلاحيات (Policies & Gates)
+        $exceptions->render(function (AuthorizationException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => 'This action is unauthorized.',
+                ], 403);
+            }
+        });
+        $exceptions->render(function (ThrottleRequestsException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => 'Too many requests. Please try again later.',
+                ], 429);
+            }
+        });
+        $exceptions->render(function (Throwable $e, $request) {
+            if ($request->is('api/*') && ! app()->environment('local')) {
+                return response()->json([
+                    'message' => 'Server Error.',
+                ], 500);
             }
         });
     })->create();
