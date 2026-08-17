@@ -174,11 +174,50 @@ class TaskTest extends TestCase
                 'description' => $task->description,
                 'status' => $task->status,
                 'due_date' => $task->due_date,
-            ], $user, [999999]); // category id غير موجود → foreign key violation
+            ], $user, [999999]);
         } catch (\Throwable) {
             // متوقع
         }
 
         $this->assertDatabaseMissing('tasks', ['title' => $task->title]);
+    }
+    public function test_user_cannot_assign_task_to_another_user_via_create_payload()
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+
+        // محاولة إنشاء task باسم userB
+        $response = $this->actingAs($userA, 'sanctum')
+            ->postJson('/api/v1/tasks', [
+                'title' => 'Attempt Hack',
+                'user_id' => $userB->id,
+            ]);
+
+        $response->assertStatus(201);
+
+        $task = Task::latest()->first();
+
+        $this->assertEquals($userA->id, $task->user_id);
+        $this->assertNotEquals($userB->id, $task->user_id);
+    }
+
+    public function test_user_cannot_change_task_ownership_via_update_payload()
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $task = Task::factory()->create(['user_id' => $userA->id]);
+
+
+        $response = $this->actingAs($userA, 'sanctum')
+            ->putJson("/api/v1/tasks/{$task->id}", [
+                'title' => 'Updated Title',
+                'user_id' => $userB->id,  // ← محاولة نقل الملكية
+            ]);
+
+        $response->assertStatus(200);
+
+        $task->refresh();
+        // الملكية يجب ألا تتغير
+        $this->assertEquals($userA->id, $task->user_id);
     }
 }
