@@ -6,6 +6,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -21,32 +22,31 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (ModelNotFoundException $e, $request) {
             if ($request->is('api/*')) {
-                return response()->json([
-                    'message' => 'Resource not found.',
-                ], 404);
+                return response()->json(['message' => 'Resource not found.'], 404);
             }
         });
 
-        // 2. أخطاء الصلاحيات (Policies & Gates)
         $exceptions->render(function (AuthorizationException $e, $request) {
             if ($request->is('api/*')) {
-                return response()->json([
-                    'message' => 'This action is unauthorized.',
-                ], 403);
+                return response()->json(['message' => 'This action is unauthorized.'], 403);
             }
         });
+
         $exceptions->render(function (ThrottleRequestsException $e, $request) {
             if ($request->is('api/*')) {
-                return response()->json([
-                    'message' => 'Too many requests. Please try again later.',
-                ], 429);
+                return response()->json(['message' => 'Too many requests. Please try again later.'], 429);
             }
         });
+
+        $exceptions->render(function (NotFoundHttpException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['message' => 'Not Found.'], 404);
+            }
+        });
+
         $exceptions->render(function (Throwable $e, $request) {
-            if ($request->is('api/*') && ! app()->environment('local')) {
-                return response()->json([
-                    'message' => 'Server Error.',
-                ], 500);
+            if ($request->is('api/*') && app()->environment('production')) {
+                return response()->json(['message' => 'Server Error.'], 500);
             }
         });
     })->create();
