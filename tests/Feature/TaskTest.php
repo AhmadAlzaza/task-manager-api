@@ -181,6 +181,7 @@ class TaskTest extends TestCase
 
         $this->assertDatabaseMissing('tasks', ['title' => $task->title]);
     }
+
     public function test_user_cannot_assign_task_to_another_user_via_create_payload()
     {
         $userA = User::factory()->create();
@@ -206,7 +207,6 @@ class TaskTest extends TestCase
         $userA = User::factory()->create();
         $userB = User::factory()->create();
         $task = Task::factory()->create(['user_id' => $userA->id]);
-
 
         $response = $this->actingAs($userA, 'sanctum')
             ->putJson("/api/v1/tasks/{$task->id}", [
