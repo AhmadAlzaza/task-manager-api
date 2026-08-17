@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TaskStatus;
 use App\Policies\TaskPolicy;
 use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Builder;
@@ -59,6 +60,7 @@ class Task extends Model
     {
         return [
             'due_date' => 'date:Y-m-d',
+            'status' => TaskStatus::class,
         ];
     }
 
