@@ -28,3 +28,8 @@ task_manager_api
 /.scribe/
 /public/vendor/scribe/
 /resources/views/scribe/
+# Generated files
+/coverage-report/
+/.phpunit.cache/
+/_ide_helper.php
+/.phpstorm.meta.php
