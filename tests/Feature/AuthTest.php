@@ -114,4 +114,35 @@ class AuthTest extends TestCase
             return $event->user->email === $user->email;
         });
     }
+
+    public function test_user_tokens_are_deleted_when_user_is_deleted()
+    {
+        $user = User::factory()->create();
+        $user->createToken('test-token');
+
+        $this->assertDatabaseCount('personal_access_tokens', 1);
+
+        $user->delete();
+
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
+    public function test_other_users_tokens_not_affected_when_user_is_deleted()
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+
+        $userA->createToken('token-a');
+        $userB->createToken('token-b');
+
+        $this->assertDatabaseCount('personal_access_tokens', 2);
+
+        $userA->delete();
+
+        // token-a محذوف، token-b باقي
+        $this->assertDatabaseCount('personal_access_tokens', 1);
+        $this->assertDatabaseHas('personal_access_tokens', [
+            'tokenable_id' => $userB->id,
+        ]);
+    }
 }

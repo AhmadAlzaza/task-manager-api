@@ -50,11 +50,20 @@ use Laravel\Sanctum\PersonalAccessToken;
  * @mixin Model
  */
 #[Fillable(['name', 'email', 'password'])]
+
 #[Hidden(['password', 'remember_token'])]
+
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
+
+    protected static function booted(): void
+    {
+        static::deleted(function (User $user) {
+            $user->tokens()->delete();
+        });
+    }
 
     /**
      * Get the attributes that should be cast.
