@@ -11,10 +11,9 @@ class CreateTaskAction
     public function execute(array $data, User $user, array $categories = []): Task
     {
         return DB::transaction(function () use ($data, $user, $categories) {
-            $task = Task::create([
-                ...$data,
-                'user_id' => $user->id,
-            ]);
+            $task = new Task($data);
+            $task->user_id = $user->id;
+            $task->save();
 
             if ($categories) {
                 $task->categories()->attach($categories);
