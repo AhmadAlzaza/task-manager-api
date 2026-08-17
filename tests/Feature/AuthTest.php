@@ -83,7 +83,7 @@ class AuthTest extends TestCase
 
     public function test_welcome_email_job_is_dispatched_on_register()
     {
-        Bus::fake();  // @phpstan-ignore staticMethod.notFound
+        Bus::fake();
 
         $user = User::factory()->make();
 
@@ -100,7 +100,7 @@ class AuthTest extends TestCase
 
     public function test_user_registered_event_is_dispatched_on_register()
     {
-        Event::fake([UserRegistered::class]); // @phpstan-ignore staticMethod.notFound
+        Event::fake([UserRegistered::class]);
 
         $user = User::factory()->make();
 
