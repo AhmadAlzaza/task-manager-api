@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
 use App\Events\UserRegistered;
 use App\Jobs\SendWelcomeEmailJob;
 use App\Models\User;
@@ -139,10 +140,26 @@ class AuthTest extends TestCase
 
         $userA->delete();
 
-        // token-a محذوف، token-b باقي
         $this->assertDatabaseCount('personal_access_tokens', 1);
         $this->assertDatabaseHas('personal_access_tokens', [
             'tokenable_id' => $userB->id,
         ]);
+    }
+
+    public function test_user_cannot_register_as_admin_via_mass_assignment()
+    {
+        $response = $this->postJson('/api/v1/register', [
+            'name' => 'Hacker User',
+            'email' => 'hacker@example.com',
+            'password' => 'password123',
+            'role' => 'admin',
+        ]);
+
+        $response->assertStatus(201);
+
+        $user = User::where('email', 'hacker@example.com')->first();
+        $this->assertNotNull($user);
+
+        $this->assertEquals(UserRole::USER, $user->role);
     }
 }
