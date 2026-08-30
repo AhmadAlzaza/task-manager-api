@@ -12,6 +12,7 @@ class CorsTest extends TestCase
     use RefreshDatabase;
 
     private const ALLOWED_ORIGIN = 'http://localhost:3000';
+
     private const UNTRUSTED_ORIGIN = 'https://evil.com';
 
     /**
