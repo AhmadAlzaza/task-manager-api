@@ -37,10 +37,28 @@ class TaskController extends Controller
     {
         $this->authorize('create', Task::class);
 
-        $task = $action->execute($request->validated(), $request->user(), $request->input('categories', []));
+        $task = $action->execute(
+            // 👇 هنا السحر: نأخذ كل البيانات الموثقة ما عدا التصنيفات
+            $request->safe()->except(['categories']),
+            $request->user(),
+            $request->input('categories', [])
+        );
 
-        // 👇 كود أنظف وإرجاع رسالة نجاح مع حالة 201
         return $this->resourceResponse(new TaskResource($task), 'Task created successfully', 201);
+    }
+
+    public function update(UpdateTaskRequest $request, Task $task, UpdateTaskAction $update)
+    {
+        $this->authorize('update', $task);
+
+        $newtask = $update->execute(
+            // 👇 نفس الشيء هنا
+            $request->safe()->except(['categories']),
+            $task,
+            $request->has('categories') ? $request->input('categories', []) : null
+        );
+
+        return $this->resourceResponse(new TaskResource($newtask), 'Task updated successfully');
     }
 
     public function show(Request $request, Task $task)
@@ -49,19 +67,6 @@ class TaskController extends Controller
         $task->load('user', 'categories');
 
         return $this->resourceResponse(new TaskResource($task), 'Task retrieved successfully');
-    }
-
-    public function update(UpdateTaskRequest $request, Task $task, UpdateTaskAction $update)
-    {
-        $this->authorize('update', $task);
-
-        $newtask = $update->execute(
-            $request->validated(),
-            $task,
-            $request->has('categories') ? $request->input('categories', []) : null
-        );
-
-        return $this->resourceResponse(new TaskResource($newtask), 'Task updated successfully');
     }
 
     public function destroy(Request $request, Task $task)

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model; // 👈 1. استدعاء المودل
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -25,9 +26,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // 👈 2. تفعيل الوضع الصارم لحماية الأداء ومنع استعلامات N+1
+        Model::shouldBeStrict(! app()->isProduction());
+
         Gate::define('manage-categories', function (User $user) {
             return $user->role === UserRole::ADMIN;
         });
+
         RateLimiter::for('auth-login', function (Request $request) {
             return Limit::perMinute(5)->by($request->ip());
         });
