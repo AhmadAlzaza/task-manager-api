@@ -9,6 +9,7 @@ use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
+use App\Traits\ApiResponse; // 👈 1. استيراد الـ Trait
 use Illuminate\Http\Request;
 
 /**
@@ -16,6 +17,8 @@ use Illuminate\Http\Request;
  */
 class TaskController extends Controller
 {
+    use ApiResponse; // 👈 2. تفعيل الـ Trait
+
     public function index(IndexTaskRequest $request)
     {
         $tasks = Task::with('user', 'categories')
@@ -23,7 +26,8 @@ class TaskController extends Controller
             ->when($request->input('status'), fn ($q) => $q->ofStatus($request->input('status')))
             ->paginate($request->input('per_page', 15));
 
-        return TaskResource::collection($tasks);
+        // 👇 استخدام دالة resourceResponse
+        return $this->resourceResponse(TaskResource::collection($tasks), 'Tasks retrieved successfully');
     }
 
     /**
@@ -35,7 +39,8 @@ class TaskController extends Controller
 
         $task = $action->execute($request->validated(), $request->user(), $request->input('categories', []));
 
-        return (new TaskResource($task))->response()->setStatusCode(201);
+        // 👇 كود أنظف وإرجاع رسالة نجاح مع حالة 201
+        return $this->resourceResponse(new TaskResource($task), 'Task created successfully', 201);
     }
 
     public function show(Request $request, Task $task)
@@ -43,7 +48,7 @@ class TaskController extends Controller
         $this->authorize('view', $task);
         $task->load('user', 'categories');
 
-        return new TaskResource($task);
+        return $this->resourceResponse(new TaskResource($task), 'Task retrieved successfully');
     }
 
     public function update(UpdateTaskRequest $request, Task $task, UpdateTaskAction $update)
@@ -56,15 +61,15 @@ class TaskController extends Controller
             $request->has('categories') ? $request->input('categories', []) : null
         );
 
-        return new TaskResource($newtask);
+        return $this->resourceResponse(new TaskResource($newtask), 'Task updated successfully');
     }
 
     public function destroy(Request $request, Task $task)
     {
         $this->authorize('delete', $task);
-
         $task->delete();
 
-        return response()->json(['message' => 'Task deleted successfully']);
+        // 👇 استخدام دالة successResponse لأننا لا نملك Resource هنا
+        return $this->successResponse(null, 'Task deleted successfully');
     }
 }

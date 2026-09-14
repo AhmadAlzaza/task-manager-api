@@ -1,11 +1,12 @@
 <?php
 
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -15,38 +16,63 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        //
+    ->withMiddleware(function (Middleware $middleware) {
+        // إعدادات الـ Middleware توضع هنا (إن وجدت)
     })
     ->withExceptions(function (Exceptions $exceptions) {
 
-        $exceptions->render(function (ModelNotFoundException $e, $request) {
+        // 1. التعامل مع أخطاء التحقق (Validation)
+        $exceptions->renderable(function (ValidationException $e, $request) {
             if ($request->is('api/*')) {
-                return response()->json(['message' => 'Resource not found.'], 404);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation Error',
+                    'errors' => $e->errors(),
+                ], 422);
             }
         });
 
-        $exceptions->render(function (AuthorizationException $e, $request) {
+        // 2. التعامل مع أخطاء "البيانات غير موجودة" (404 Not Found)
+        $exceptions->renderable(function (NotFoundHttpException $e, $request) {
             if ($request->is('api/*')) {
-                return response()->json(['message' => 'This action is unauthorized.'], 403);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Resource not found',
+                    'errors' => null,
+                ], 404);
             }
         });
 
-        $exceptions->render(function (ThrottleRequestsException $e, $request) {
+        // 3. التعامل مع أخطاء المصادقة (Unauthenticated)
+        $exceptions->renderable(function (AuthenticationException $e, $request) {
             if ($request->is('api/*')) {
-                return response()->json(['message' => 'Too many requests. Please try again later.'], 429);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated',
+                    'errors' => null,
+                ], 401);
             }
         });
 
-        $exceptions->render(function (NotFoundHttpException $e, $request) {
+        // 4. التعامل مع أخطاء الصلاحيات (Forbidden)
+        $exceptions->renderable(function (AuthorizationException $e, $request) {
             if ($request->is('api/*')) {
-                return response()->json(['message' => 'Not Found.'], 404);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This action is unauthorized.',
+                    'errors' => null,
+                ], 403);
             }
         });
 
-        $exceptions->render(function (Throwable $e, $request) {
-            if ($request->is('api/*') && app()->environment('production')) {
-                return response()->json(['message' => 'Server Error.'], 500);
+        // 5. التعامل مع أخطاء كثرة الطلبات (Rate Limiting - 429)
+        $exceptions->renderable(function (ThrottleRequestsException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Too many requests. Please try again later.',
+                    'errors' => null,
+                ], 429);
             }
         });
     })->create();
