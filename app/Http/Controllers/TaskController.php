@@ -24,22 +24,19 @@ class TaskController extends Controller
             ->ownedBy($request->user())
 
             // 1. الفلترة حسب الحالة (Status)
-            ->when($request->input('status'), fn($q, $status) => $q->ofStatus($status))
+            ->when($request->input('status'), fn ($q, $status) => $q->ofStatus($status))
 
             // 2. الفلترة حسب التصنيف (Category)
             ->when(
                 $request->input('category_id'),
-                fn($q, $categoryId) =>
-                $q->whereHas('categories', fn($query) => $query->where('categories.id', $categoryId))
+                fn ($q, $categoryId) => $q->whereHas('categories', fn ($query) => $query->where('categories.id', $categoryId))
             )
 
             // 3. البحث النصي (Search في العنوان أو الوصف)
             ->when(
                 $request->input('search'),
-                fn($q, $search) =>
-                $q->where(
-                    fn($query) =>
-                    $query->where('title', 'like', "%{$search}%")
+                fn ($q, $search) => $q->where(
+                    fn ($query) => $query->where('title', 'like', "%{$search}%")
                         ->orWhere('description', 'like', "%{$search}%")
                 )
             )
@@ -49,7 +46,7 @@ class TaskController extends Controller
                 $sortBy = $request->input('sort_by');
                 $direction = $request->input('sort_direction', 'desc');
                 $q->orderBy($sortBy, $direction);
-            }, fn($q) => $q->latest()) // الترتيب الافتراضي الأحدث أولاً
+            }, fn ($q) => $q->latest()) // الترتيب الافتراضي الأحدث أولاً
 
             // 5. التقسيم (Pagination)
             ->paginate($request->input('per_page', 15));

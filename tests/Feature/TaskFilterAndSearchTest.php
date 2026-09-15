@@ -19,13 +19,13 @@ class TaskFilterAndSearchTest extends TestCase
         Task::factory()->create([
             'user_id' => $user->id,
             'title' => 'Learn Laravel Architecture',
-            'description' => 'Advanced backend development'
+            'description' => 'Advanced backend development',
         ]);
 
         Task::factory()->create([
             'user_id' => $user->id,
             'title' => 'Buy groceries',
-            'description' => 'Milk and bread'
+            'description' => 'Milk and bread',
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks?search=Laravel');
@@ -60,12 +60,12 @@ class TaskFilterAndSearchTest extends TestCase
 
         Task::factory()->create([
             'user_id' => $user->id,
-            'due_date' => now()->addDays(5)
+            'due_date' => now()->addDays(5),
         ]);
 
         $latestTask = Task::factory()->create([
             'user_id' => $user->id,
-            'due_date' => now()->addDay()
+            'due_date' => now()->addDay(),
         ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks?sort_by=due_date&sort_direction=asc');
