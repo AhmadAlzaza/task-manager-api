@@ -7,6 +7,7 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Traits\ApiResponse; // 👈 استيراد الـ Trait
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 /** @group Authentication */
 class AuthController extends Controller
 {
+    use ApiResponse; // 👈 تفعيل الـ Trait
+
     /**
      * @unauthenticated
      */
@@ -33,10 +36,10 @@ class AuthController extends Controller
 
         event(new UserRegistered($user));
 
-        return response()->json([
+        return $this->successResponse([
             'token' => $token,
             'user' => new UserResource($user),
-        ], 201);
+        ], 'User registered successfully', 201);
     }
 
     /**
@@ -44,23 +47,11 @@ class AuthController extends Controller
      *
      * @bodyParam email string required User email. Example: admin@test.com
      * @bodyParam password string required User password. Example: password
-     *
-     * @response 200 {
-     *   "token": "1|abcdefghijklmnopqrstuvwxyz",
-     *   "user": {
-     *     "id": 1,
-     *     "name": "Admin",
-     *     "email": "admin@test.com"
-     *   }
-     * }
-     * @response 401 {
-     *   "message": "Invalid credentials"
-     * }
      */
     public function login(LoginRequest $request)
     {
         if (! Auth::attempt($request->only('email', 'password'))) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+            return $this->errorResponse('Invalid credentials', 401);
         }
 
         /** @var User $user */
@@ -68,16 +59,16 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return response()->json([
+        return $this->successResponse([
             'token' => $token,
             'user' => new UserResource($user),
-        ]);
+        ], 'Logged in successfully');
     }
 
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();
 
-        return response()->json(['message' => 'Logged out successfully']);
+        return $this->successResponse(null, 'Logged out successfully');
     }
 }

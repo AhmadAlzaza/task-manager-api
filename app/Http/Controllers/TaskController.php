@@ -9,36 +9,34 @@ use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
-use App\Traits\ApiResponse; // 👈 1. استيراد الـ Trait
-use Illuminate\Http\Request;
+use App\Traits\ApiResponse;
 
 /**
  * @group Tasks
  */
 class TaskController extends Controller
 {
-    use ApiResponse; // 👈 2. تفعيل الـ Trait
+    use ApiResponse;
 
     public function index(IndexTaskRequest $request)
     {
-        $tasks = Task::with('user', 'categories')
+        $tasks = Task::with('categories')
             ->ownedBy($request->user())
             ->when($request->input('status'), fn ($q) => $q->ofStatus($request->input('status')))
             ->paginate($request->input('per_page', 15));
 
-        // 👇 استخدام دالة resourceResponse
         return $this->resourceResponse(TaskResource::collection($tasks), 'Tasks retrieved successfully');
     }
 
     /**
-     * @bodyParam categories integer[] optional قائمة IDs للـ categories. Example: [1]
+     * @bodyParam categories integer[]
      */
     public function store(StoreTaskRequest $request, CreateTaskAction $action)
     {
         $this->authorize('create', Task::class);
 
         $task = $action->execute(
-            // 👇 هنا السحر: نأخذ كل البيانات الموثقة ما عدا التصنيفات
+
             $request->safe()->except(['categories']),
             $request->user(),
             $request->input('categories', [])
@@ -51,17 +49,17 @@ class TaskController extends Controller
     {
         $this->authorize('update', $task);
 
-        $newtask = $update->execute(
-            // 👇 نفس الشيء هنا
+        $updatedTask = $update->execute(
+
             $request->safe()->except(['categories']),
             $task,
             $request->has('categories') ? $request->input('categories', []) : null
         );
 
-        return $this->resourceResponse(new TaskResource($newtask), 'Task updated successfully');
+        return $this->resourceResponse(new TaskResource($updatedTask), 'Task updated successfully');
     }
 
-    public function show(Request $request, Task $task)
+    public function show(Task $task)
     {
         $this->authorize('view', $task);
         $task->load('user', 'categories');
@@ -69,12 +67,11 @@ class TaskController extends Controller
         return $this->resourceResponse(new TaskResource($task), 'Task retrieved successfully');
     }
 
-    public function destroy(Request $request, Task $task)
+    public function destroy(Task $task)
     {
         $this->authorize('delete', $task);
         $task->delete();
 
-        // 👇 استخدام دالة successResponse لأننا لا نملك Resource هنا
         return $this->successResponse(null, 'Task deleted successfully');
     }
 }
