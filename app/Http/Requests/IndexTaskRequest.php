@@ -14,8 +14,12 @@ class IndexTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['sometimes', 'string', 'in:pending,in_progress,completed'],
-            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'status' => ['nullable', 'string', 'in:pending,in_progress,completed'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'search' => ['nullable', 'string', 'max:255'],
+            'sort_by' => ['nullable', 'string', 'in:due_date,created_at,title'],
+            'sort_direction' => ['nullable', 'string', 'in:asc,desc'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];
     }
 }
