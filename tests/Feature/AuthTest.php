@@ -26,8 +26,12 @@ class AuthTest extends TestCase
             'password' => Str::random(12),
         ]);
 
-        $response->assertStatus(201)
-            ->assertJsonStructure(['token', 'user']);
+        $response->assertStatus(201) // أو 200 في اللوجن
+            ->assertJsonStructure([
+                'data' => ['token', 'user'],
+                'success',
+                'message',
+            ]);
     }
 
     public function test_user_can_login()
@@ -42,7 +46,11 @@ class AuthTest extends TestCase
             'password' => $password,
         ]);
         $response->assertStatus(200)
-            ->assertJsonStructure(['token', 'user']);
+            ->assertJsonStructure([
+                'data' => ['token', 'user'],
+                'success',
+                'message',
+            ]);
     }
 
     public function test_user_can_logout()
