@@ -7,6 +7,8 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -21,7 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
 
-        // 1. التعامل مع أخطاء التحقق (Validation)
+        // 1. أخطاء التحقق (Validation)
         $exceptions->renderable(function (ValidationException $e, $request) {
             if ($request->is('api/*')) {
                 return response()->json([
@@ -32,7 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        // 2. التعامل مع أخطاء "البيانات غير موجودة" (404 Not Found)
+        // 2. أخطاء "البيانات غير موجودة" (404 Not Found)
         $exceptions->renderable(function (NotFoundHttpException $e, $request) {
             if ($request->is('api/*')) {
                 return response()->json([
@@ -43,7 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        // 3. التعامل مع أخطاء المصادقة (Unauthenticated)
+        // 3. أخطاء المصادقة (Unauthenticated 401)
         $exceptions->renderable(function (AuthenticationException $e, $request) {
             if ($request->is('api/*')) {
                 return response()->json([
@@ -54,7 +56,18 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        // 4. التعامل مع أخطاء الصلاحيات (Forbidden)
+        // 4. أخطاء الصلاحيات (Forbidden 403)
+        // نلتقط AccessDeniedHttpException لأنه النوع الذي يعتمده Laravel داخلياً
+        $exceptions->renderable(function (AccessDeniedHttpException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This action is unauthorized.',
+                    'errors' => null,
+                ], 403);
+            }
+        });
+        // وكذلك نلتقط AuthorizationException تحسباً لأي مسار آخر
         $exceptions->renderable(function (AuthorizationException $e, $request) {
             if ($request->is('api/*')) {
                 return response()->json([
@@ -65,7 +78,7 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
-        // 5. التعامل مع أخطاء كثرة الطلبات (Rate Limiting - 429)
+        // 5. أخطاء كثرة الطلبات (Rate Limiting - 429)
         $exceptions->renderable(function (ThrottleRequestsException $e, $request) {
             if ($request->is('api/*')) {
                 return response()->json([
@@ -73,6 +86,35 @@ return Application::configure(basePath: dirname(__DIR__))
                     'message' => 'Too many requests. Please try again later.',
                     'errors' => null,
                 ], 429);
+            }
+        });
+
+        // 6. الحماية الشاملة للـ API (Catch-all Fallback) لأي خطأ غير متوقع
+        $exceptions->renderable(function (Throwable $e, $request) {
+            if ($request->is('api/*')) {
+                // منع التداخل مع الأخطاء التي تم التعامل معها في الأعلى
+                if (
+                    $e instanceof ValidationException ||
+                    $e instanceof AuthenticationException ||
+                    $e instanceof AuthorizationException ||
+                    $e instanceof NotFoundHttpException ||
+                    $e instanceof AccessDeniedHttpException ||
+                    $e instanceof ThrottleRequestsException
+                ) {
+                    return; // اتركها للمعالجات السابقة
+                }
+
+                // استخراج كود الخطأ (إذا كان HTTP Error مثل 405 نعيده كما هو، وإلا نعيد 500)
+                $statusCode = $e instanceof HttpExceptionInterface
+                    ? $e->getStatusCode()
+                    : 500;
+
+                return response()->json([
+                    'success' => false,
+                    // إخفاء رسائل الأخطاء الحساسة في الـ Production
+                    'message' => config('app.debug') ? $e->getMessage() : 'Internal Server Error',
+                    'errors' => null,
+                ], $statusCode);
             }
         });
     })->create();
