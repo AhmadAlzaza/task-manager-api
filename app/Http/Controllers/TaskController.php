@@ -9,6 +9,7 @@ use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
+use App\Queries\TaskQuery;
 use App\Traits\ApiResponse;
 
 /**
@@ -18,38 +19,12 @@ class TaskController extends Controller
 {
     use ApiResponse;
 
-    public function index(IndexTaskRequest $request)
+    public function index(IndexTaskRequest $request, TaskQuery $query)
     {
-        $tasks = Task::with('categories')
-            ->ownedBy($request->user())
-
-            // 1. الفلترة حسب الحالة (Status)
-            ->when($request->input('status'), fn ($q, $status) => $q->ofStatus($status))
-
-            // 2. الفلترة حسب التصنيف (Category)
-            ->when(
-                $request->input('category_id'),
-                fn ($q, $categoryId) => $q->whereHas('categories', fn ($query) => $query->where('categories.id', $categoryId))
-            )
-
-            // 3. البحث النصي (Search في العنوان أو الوصف)
-            ->when(
-                $request->input('search'),
-                fn ($q, $search) => $q->where(
-                    fn ($query) => $query->where('title', 'like', "%{$search}%")
-                        ->orWhere('description', 'like', "%{$search}%")
-                )
-            )
-
-            // 4. الترتيب الديناميكي (Sorting) مع حماية الحقول المسموحة
-            ->when($request->input('sort_by'), function ($q) use ($request) {
-                $sortBy = $request->input('sort_by');
-                $direction = $request->input('sort_direction', 'desc');
-                $q->orderBy($sortBy, $direction);
-            }, fn ($q) => $q->latest()) // الترتيب الافتراضي الأحدث أولاً
-
-            // 5. التقسيم (Pagination)
-            ->paginate($request->input('per_page', 15));
+        $tasks = $query->paginateForUser(
+            $request->user(),
+            $request->validated()
+        );
 
         return $this->resourceResponse(TaskResource::collection($tasks), 'Tasks retrieved successfully');
     }
@@ -62,7 +37,6 @@ class TaskController extends Controller
         $this->authorize('create', Task::class);
 
         $task = $action->execute(
-
             $request->safe()->except(['categories']),
             $request->user(),
             $request->input('categories', [])
@@ -76,7 +50,6 @@ class TaskController extends Controller
         $this->authorize('update', $task);
 
         $updatedTask = $update->execute(
-
             $request->safe()->except(['categories']),
             $task,
             $request->has('categories') ? $request->input('categories', []) : null

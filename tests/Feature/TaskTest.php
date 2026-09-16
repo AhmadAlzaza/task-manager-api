@@ -229,4 +229,100 @@ class TaskTest extends TestCase
 
         $this->assertTrue(Gate::forUser($user)->allows('create', Task::class));
     }
+
+    // =========================================================================
+    // اختبارات الفلاتر الجديدة للـ Index التي تم نقلها لـ TaskQuery
+    // =========================================================================
+
+    public function test_index_can_filter_by_category()
+    {
+        $user = User::factory()->create();
+        $category = Category::factory()->create();
+
+        $taskWithCategory = Task::factory()->create(['user_id' => $user->id]);
+        $taskWithCategory->categories()->attach($category);
+
+        Task::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user, 'sanctum')->getJson("/api/v1/tasks?category_id={$category->id}");
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $taskWithCategory->id);
+    }
+
+    public function test_index_can_search_by_title()
+    {
+        $user = User::factory()->create();
+        Task::factory()->create(['user_id' => $user->id, 'title' => 'Learn Laravel 11']);
+        Task::factory()->create(['user_id' => $user->id, 'title' => 'Read a book']);
+
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks?search=Laravel');
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.title', 'Learn Laravel 11');
+    }
+
+    public function test_index_can_search_by_description()
+    {
+        $user = User::factory()->create();
+        Task::factory()->create(['user_id' => $user->id, 'description' => 'Fix the bug in the system']);
+        Task::factory()->create(['user_id' => $user->id, 'description' => 'Write documentation']);
+
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks?search=bug');
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.description', 'Fix the bug in the system');
+    }
+
+    public function test_index_respects_sort_by_and_direction()
+    {
+        $user = User::factory()->create();
+        Task::factory()->create(['user_id' => $user->id, 'title' => 'B Task']);
+        Task::factory()->create(['user_id' => $user->id, 'title' => 'A Task']);
+
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks?sort_by=title&sort_direction=asc');
+
+        $response->assertStatus(200);
+        $this->assertEquals('A Task', $response->json('data.0.title'));
+    }
+
+    public function test_index_respects_pagination_per_page()
+    {
+        $user = User::factory()->create();
+        Task::factory()->count(10)->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks?per_page=5');
+
+        $response->assertStatus(200)
+            ->assertJsonCount(5, 'data');
+
+        // التعديل هنا: فصلناها واستخدمنا $this بدلاً من $response
+        $this->assertNotNull($response->json('meta.current_page'));
+    }
+
+    public function test_index_maintains_api_contract_wrapper()
+    {
+        $user = User::factory()->create();
+        Task::factory()->create(['user_id' => $user->id]);
+
+        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    '*' => [
+                        'id',
+                        'title',
+                        'status',
+                    ],
+                ],
+                'links',
+                'meta',
+            ]);
+    }
 }
