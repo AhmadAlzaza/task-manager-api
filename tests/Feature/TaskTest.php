@@ -306,7 +306,14 @@ class TaskTest extends TestCase
     public function test_index_maintains_api_contract_wrapper()
     {
         $user = User::factory()->create();
-        Task::factory()->create(['user_id' => $user->id]);
+
+        Task::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'Contract test task',
+            'description' => 'Contract test description',
+            'status' => 'pending',
+            'due_date' => '2026-09-24',
+        ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks');
 
@@ -324,5 +331,61 @@ class TaskTest extends TestCase
                 'links',
                 'meta',
             ]);
+
+        $data = $response->json('data.0');
+
+        $this->assertIsInt($data['id']);
+        $this->assertIsString($data['title']);
+        $this->assertIsString($data['description']);
+        $this->assertIsString($data['status']);
+        $this->assertIsString($data['due_date']);
+    }
+
+    public function test_it_filters_tasks_by_status_search_and_category_together()
+    {
+        $user = User::factory()->create();
+
+        $categoryX = Category::factory()->create();
+        $categoryY = Category::factory()->create();
+
+        // Matching Task: search + status + category
+        $matchingTask = Task::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'fix the database connection',
+            'status' => 'pending',
+        ]);
+        $matchingTask->categories()->attach($categoryX);
+
+        // Decoy 1: fails on status
+        $decoy1 = Task::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'fix the UI bug',
+            'status' => 'completed',
+        ]);
+        $decoy1->categories()->attach($categoryX);
+
+        // Decoy 2: fails on search
+        $decoy2 = Task::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'update documentation',
+            'status' => 'pending',
+        ]);
+        $decoy2->categories()->attach($categoryX);
+
+        // Decoy 3: fails on category
+        $decoy3 = Task::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'fix the server config',
+            'status' => 'pending',
+        ]);
+        $decoy3->categories()->attach($categoryY);
+
+        $response = $this->actingAs($user, 'sanctum')->getJson(
+            "/api/v1/tasks?status=pending&search=fix&category_id={$categoryX->id}"
+        );
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $matchingTask->id);
     }
 }
