@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TaskStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * @mixin Request
@@ -20,7 +22,11 @@ class UpdateTaskRequest extends FormRequest
         return [
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'sometimes|in:pending,in_progress,completed',
+            'status' => [
+                'sometimes',
+                'string',
+                Rule::enum(TaskStatus::class),
+            ],
             'due_date' => 'nullable|date',
             'categories' => 'nullable|array',
             'categories.*' => 'exists:categories,id',

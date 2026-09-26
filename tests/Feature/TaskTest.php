@@ -102,6 +102,35 @@ class TaskTest extends TestCase
             ->assertJsonCount(2, 'data');
     }
 
+    public function test_status_must_be_a_valid_task_status()
+    {
+        $user = User::factory()->create();
+        $task = Task::factory()->create(['user_id' => $user->id]);
+
+        $createResponse = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/tasks', [
+                'title' => 'Invalid status test',
+                'status' => 'invalid-status',
+            ]);
+
+        $createResponse->assertStatus(422)
+            ->assertJsonValidationErrors('status');
+
+        $updateResponse = $this->actingAs($user, 'sanctum')
+            ->putJson("/api/v1/tasks/{$task->id}", [
+                'status' => 'invalid-status',
+            ]);
+
+        $updateResponse->assertStatus(422)
+            ->assertJsonValidationErrors('status');
+
+        $indexResponse = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/tasks?status=invalid-status');
+
+        $indexResponse->assertStatus(422)
+            ->assertJsonValidationErrors('status');
+    }
+
     public function test_user_can_view_task()
     {
         $user = User::factory()->create();
