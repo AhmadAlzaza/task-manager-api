@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TaskStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class IndexTaskRequest extends FormRequest
 {
@@ -14,7 +16,11 @@ class IndexTaskRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['nullable', 'string', 'in:pending,in_progress,completed'],
+            'status' => [
+                'nullable',
+                'string',
+                Rule::enum(TaskStatus::class),
+            ],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'search' => ['nullable', 'string', 'max:255'],
             'sort_by' => ['nullable', 'string', 'in:due_date,created_at,title'],
