@@ -1,0 +1,151 @@
+services:
+  # ---------------------------------------------------------------------------
+  # MySQL
+  # ---------------------------------------------------------------------------
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+
+    volumes:
+      - production_dbdata:/var/lib/mysql
+
+    networks:
+      - backend
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'mysqladmin ping -h 127.0.0.1 -uroot -p"$${MYSQL_ROOT_PASSWORD}" --silent',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Database migrations
+  # ---------------------------------------------------------------------------
+  migrate:
+    image: task-manager-api:phase-8-3
+    restart: "no"
+
+    env_file:
+      - .env.production
+
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+
+    command: ["php", "artisan", "migrate", "--force"]
+
+    networks:
+      - backend
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # PHP-FPM application
+  # ---------------------------------------------------------------------------
+  app:
+    image: task-manager-api:phase-8-3
+    restart: unless-stopped
+
+    env_file:
+      - .env.production
+
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+
+    networks:
+      - frontend
+      - backend
+
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'php -r "exit((bool) @fsockopen(''127.0.0.1'', 9000) ? 0 : 1);"',
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Queue worker
+  # ---------------------------------------------------------------------------
+  worker:
+    image: task-manager-api:phase-8-3
+    restart: unless-stopped
+
+    env_file:
+      - .env.production
+
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+
+    command:
+      ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=60"]
+
+    networks:
+      - backend
+
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # ---------------------------------------------------------------------------
+  # Nginx
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile.production
+      args:
+        APP_IMAGE: task-manager-api:phase-8-3
+
+    image: task-manager-api-nginx:phase-8-3
+    restart: unless-stopped
+
+    ports:
+      - "8000:80"
+
+    networks:
+      - frontend
+
+    depends_on:
+      app:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/up >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+networks:
+  frontend:
+    driver: bridge
+
+  backend:
+    driver: bridge
+
+volumes:
+  production_dbdata:
+    driver: local
