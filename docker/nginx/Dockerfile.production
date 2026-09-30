@@ -1,0 +1,22 @@
+# syntax=docker/dockerfile:1
+
+ARG APP_IMAGE=task-manager-api:phase-8-3
+
+# Use the already-built Laravel production image as the source
+# for the public/ directory.
+FROM ${APP_IMAGE} AS app
+
+# -----------------------------------------------------------------------------
+# Production Nginx runtime
+# -----------------------------------------------------------------------------
+FROM nginx:alpine
+
+WORKDIR /var/www
+
+# Copy only the public Laravel assets required by Nginx.
+COPY --from=app /var/www/public ./public
+
+# Production Nginx configuration.
+COPY docker/nginx/conf.d/app.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
