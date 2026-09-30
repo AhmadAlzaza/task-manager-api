@@ -2,11 +2,13 @@
 
 A RESTful API for managing tasks and categories, built with Laravel 13.
 
+The project focuses on a maintainable backend architecture, consistent API contracts, authentication and authorization, database performance, automated testing, and containerized production deployment.
+
 ## Tech Stack
 
 - **Laravel 13**
 - **PHP 8.3**
-- **MySQL 8** for Docker-based environments
+- **MySQL 8.0**
 - **SQLite** for automated tests and default local development
 - **Laravel Sanctum** for API authentication
 - **Laravel Policies** for authorization
@@ -14,10 +16,14 @@ A RESTful API for managing tasks and categories, built with Laravel 13.
 - **Laravel Pint** for code style
 - **Larastan / PHPStan** for static analysis
 - **Scribe** for API documentation
+- **Docker**
+- **Docker Compose**
+- **Nginx**
+- **PHP-FPM**
 
 ## Architecture
 
-The project follows a layered Laravel architecture focused on clear responsibilities and maintainability.
+The application follows a layered Laravel architecture focused on clear responsibilities and maintainability.
 
 - **Controllers** — handle HTTP requests and responses.
 - **Actions** — encapsulate task business operations such as `CreateTaskAction` and `UpdateTaskAction`.
@@ -29,6 +35,52 @@ The project follows a layered Laravel architecture focused on clear responsibili
 - **Rate Limiting** — protects authentication and API endpoints against excessive requests.
 - **Database Transactions** — used where multiple database operations must remain consistent.
 - **Database Indexing** — optimized for common task and category access patterns.
+
+### Production Architecture
+
+The production deployment uses separate containers for the web server, Laravel application, queue worker, database, and migration process.
+
+text
+HTTP
+|
+v
++-------------+
+| Nginx |
+| web |
++-------------+
+|
+FastCGI
+|
+v
++-------------+
+| PHP-FPM |
+| Laravel app |
++-------------+
+| |
+| |
+v v
++-----------+ +----------------+
+| MySQL 8 | | Queue Worker |
+| Database | | Laravel Queue |
++-----------+ +----------------+
+^
+|
++------------------+
+| Migration Service|
++------------------+
+
+Production infrastructure includes:
+
+- Dedicated PHP-FPM application container
+- Dedicated Nginx container
+- Dedicated queue worker container
+- Dedicated migration container
+- MySQL 8 container
+- Persistent MySQL Docker volume
+- Application and web health checks
+- Container restart policies
+- Docker-based application logging
+- Production error handling and API error contracts
 
 ## API Versioning
 
@@ -85,10 +137,22 @@ The application defines the following named rate limiters:
 | PUT    | `/api/v1/tasks/{id}` | Update a task                       |
 | DELETE | `/api/v1/tasks/{id}` | Delete a task                       |
 
-Task listing supports status filtering:
+Task listing supports filtering, searching, sorting, and pagination.
+
+Example:
+
+http
+GET /api/v1/tasks?status=pending
+
+Additional query parameters include:
 
 text
-GET /api/v1/tasks?status=pending
+status
+category_id
+search
+sort_by
+sort_direction
+per_page
 
 ### Categories
 
@@ -104,7 +168,7 @@ GET /api/v1/tasks?status=pending
 
 API errors use a consistent JSON structure.
 
-Example:
+Example validation response:
 
 json
 {
@@ -119,22 +183,22 @@ json
 
 Common API error responses include:
 
-- `401` — Unauthenticated
-- `403` — Unauthorized
-- `404` — Resource not found
-- `422` — Validation error
-- `429` — Too many requests
-- `500` — Internal server error
+| Status | Meaning               |
+| ------ | --------------------- |
+| `401`  | Unauthenticated       |
+| `403`  | Unauthorized          |
+| `404`  | Resource not found    |
+| `422`  | Validation error      |
+| `429`  | Too many requests     |
+| `500`  | Internal server error |
 
-When debug mode is disabled, production API responses do not expose internal exception messages.
+Production API responses do not expose internal exception messages when debug mode is disabled.
 
 ## Environment Configuration
 
-Copy `.env.example` to `.env` and configure the environment for the target runtime.
+### Local Development
 
-The repository's `.env.example` is a **development-oriented template**. It currently uses SQLite, database-backed sessions, database-backed cache, database queues, and log mail delivery.
-
-Example:
+Copy `.env.example` to `.env`:
 
 bash
 cp .env.example .env
@@ -144,22 +208,44 @@ Generate the application key:
 bash
 php artisan key:generate
 
-The admin seeder uses the following environment variables:
+The `.env.example` file is development-oriented and currently uses:
+
+- SQLite
+- Database-backed sessions
+- Database-backed cache
+- Database queues
+- Log mail delivery
+
+The admin seeder uses:
 
 env
 ADMIN_NAME=Admin
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=
 
-`ADMIN_PASSWORD` must be configured when running the admin seeder in production.
+`ADMIN_PASSWORD` must be configured before running the admin seeder.
 
-Production environments should provide their own environment configuration, including:
+### Production
+
+Production deployments use a separate `.env.production` file that is not committed to the repository.
+
+At minimum, production should provide appropriate values for:
 
 env
 APP_ENV=production
 APP_DEBUG=false
+APP_KEY=...
+LOG_CHANNEL=stderr
 
-Production secrets such as `APP_KEY` and `ADMIN_PASSWORD` must never be committed to the repository.
+Database credentials and other secrets must also be supplied through the production environment.
+
+Production secrets such as the following must never be committed:
+
+text
+APP_KEY
+DB_PASSWORD
+MYSQL_ROOT_PASSWORD
+ADMIN_PASSWORD
 
 ## Local Installation
 
@@ -168,7 +254,6 @@ Production secrets such as `APP_KEY` and `ADMIN_PASSWORD` must never be committe
 - PHP 8.3+
 - Composer 2+
 - SQLite or MySQL
-- Node.js/npm if frontend asset tooling is required
 
 ### Setup
 
@@ -220,75 +305,117 @@ The API will be available at:
 text
 http://127.0.0.1:8000
 
-## Docker
+## Production Deployment
 
-The repository includes a Docker Compose environment with:
+The repository includes a production-oriented Docker deployment using:
 
 - PHP 8.3 FPM
 - Nginx
 - MySQL 8.0
+- Laravel database queue
+- Dedicated queue worker
+- Dedicated migration service
+- Health checks
+- Persistent MySQL storage
+- Docker stdout/stderr logging
 
-The current Docker Compose setup is intended for **local development and integration testing**. It is **not the final production deployment architecture**.
+### Production Docker Services
 
-### Docker Services
+| Service   | Purpose                     | Exposure        |
+| --------- | --------------------------- | --------------- |
+| `web`     | Nginx web server            | `8000:80`       |
+| `app`     | Laravel PHP-FPM application | Internal only   |
+| `worker`  | Laravel queue worker        | Internal only   |
+| `db`      | MySQL database              | Internal only   |
+| `migrate` | Runs database migrations    | No exposed port |
 
-| Service | Purpose                     | Port    |
-| ------- | --------------------------- | ------- |
-| `app`   | PHP-FPM Laravel application | `9000`  |
-| `web`   | Nginx web server            | `8000`  |
-| `db`    | MySQL 8 database            | `33306` |
-
-Inside the Docker network, the database service is available as:
+MySQL is available to application containers through the internal Docker network at:
 
 text
 db:3306
 
-### Docker Setup
+The database port is not published to the host.
 
-Make sure Composer dependencies are installed before starting the current Docker environment:
+### Production Image Build
 
-bash
-composer install
-
-Build and start the containers:
+Build the Laravel application image:
 
 bash
-docker compose up -d --build
+docker build -t task-manager-api:phase-8-3 .
 
-For the Docker environment, configure the application database connection to use the MySQL service:
-
-env
-DB_CONNECTION=mysql
-DB_HOST=db
-DB_PORT=3306
-DB_DATABASE=task_manager
-DB_USERNAME=root
-DB_PASSWORD=root
-
-Run migrations inside the application container:
+Build the Nginx production image:
 
 bash
-docker compose exec app php artisan migrate --force
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ build web
 
-Seed the admin account:
-
-bash
-docker compose exec app php artisan db:seed --force
-
-The current Docker Compose setup uses the database queue driver. Start a queue worker in a separate terminal:
+### Start the Production Stack
 
 bash
-docker compose exec app php artisan queue:work --tries=3
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ up -d
 
-The API is available through Nginx at:
+The migration service runs before the application containers and must complete successfully before `app` and `worker` start.
+
+### Verify Deployment
+
+Check container status:
+
+bash
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ ps
+
+Expected services:
 
 text
-http://localhost:8000
+db healthy
+app healthy
+web healthy
+worker running
 
-Laravel's health endpoint is available at:
+Check the Laravel environment:
+
+bash
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ exec app php artisan about
+
+Production should report:
 
 text
-http://localhost:8000/up
+Environment production
+Debug Mode OFF
+Database mysql
+Logs stderr
+Queue database
+
+Check migration completion:
+
+bash
+docker inspect task-manager-api-migrate-1 \
+ --format 'status={{.State.Status}} exit_code={{.State.ExitCode}}'
+
+Expected:
+
+text
+status=exited exit_code=0
+
+Check the application health endpoint:
+
+bash
+curl -i http://localhost:8000/up
+
+Expected:
+
+text
+HTTP/1.1 200 OK
 
 ## Queue Processing
 
@@ -299,30 +426,111 @@ QUEUE_CONNECTION=database
 
 Queued work includes the welcome email flow.
 
-A queue worker must therefore be running in environments where queued jobs are expected to be processed.
+In production, the queue worker runs as a dedicated Docker service rather than being started manually inside the application container.
 
-For local development:
+The production worker runs with:
+
+text
+--sleep=3
+--tries=3
+--timeout=60
+
+The database queue configuration uses:
+
+text
+retry_after = 90
+
+The worker timeout is intentionally lower than `retry_after` to reduce the risk of the same job being processed concurrently after a worker timeout.
+
+Check failed jobs:
 
 bash
-php artisan queue:work --tries=3
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ exec app php artisan queue:failed
 
-For Docker:
+Retry a failed job:
 
 bash
-docker compose exec app php artisan queue:work --tries=3
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ exec app php artisan queue:retry <job-id>
+
+View worker logs:
+
+bash
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ logs worker --tail=50
+
+## Logging and Error Handling
+
+Production Laravel logs are written to `stderr`:
+
+env
+LOG_CHANNEL=stderr
+
+This allows Laravel application errors to be collected by Docker logging.
+
+View application logs:
+
+bash
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ logs app --tail=100
+
+View Nginx logs:
+
+bash
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ logs web --tail=100
+
+Unexpected API exceptions are returned to clients using a generic production response:
+
+json
+{
+"success": false,
+"message": "Internal Server Error",
+"errors": null
+}
+
+Internal exception details remain available through application logs while `APP_DEBUG=false`.
+
+## Nginx Security Hardening
+
+The production Nginx configuration includes:
+
+- `server_tokens off`
+- Docker stdout/stderr logging
+- `X-Content-Type-Options`
+- `X-Frame-Options`
+- `Referrer-Policy`
+- Hidden-file access restrictions
+
+PHP version exposure is also disabled in the application image:
+
+ini
+expose_php = Off
 
 ## Database and Performance
 
-The project uses database indexes aligned with current query patterns, including:
+The database indexes are aligned with the current query patterns.
+
+Relevant indexes include:
 
 text
 tasks_user_id_created_at_index
-tasks_user_id_status_index
 category_task_category_id_index
 
 The task listing query uses the composite `(user_id, created_at)` index for user-scoped ordering.
 
-The current database optimization was verified using `EXPLAIN`, including the expected use of the composite ordering index.
+Database optimization was verified with `EXPLAIN`, including the expected use of the composite ordering index.
 
 ## Testing
 
@@ -331,7 +539,19 @@ Run the automated test suite with:
 bash
 php artisan test
 
-The test suite covers authentication, authorization, validation, API behavior, task and category operations, error handling, rate limiting, configuration-related behavior, and query behavior.
+The test suite covers:
+
+- Authentication
+- Authorization
+- Validation
+- Task and category operations
+- API behavior
+- Error handling
+- Rate limiting
+- Configuration-related behavior
+- Query behavior
+
+The CI test environment uses SQLite.
 
 ## Code Quality
 
@@ -349,7 +569,7 @@ bash
 
 The project uses Scribe for generated API documentation.
 
-Generate the documentation with:
+Generate the documentation in a development environment:
 
 bash
 php artisan scribe:generate
@@ -359,26 +579,86 @@ The generated documentation is available under:
 text
 /docs
 
+Scribe configuration is excluded from the production application image.
+
 ## Health Check
 
 Laravel exposes the application health endpoint:
 
-text
+http
 GET /up
 
-This can be used as a basic application health check.
+Example:
+
+bash
+curl http://localhost:8000/up
+
+The same endpoint is used by the production Nginx health check to verify that the Laravel upstream is available.
 
 ## CI
 
 The repository uses GitHub Actions for automated quality checks.
 
-The current CI pipeline runs:
+The CI pipeline runs:
 
 - Laravel Pint
 - Larastan / PHPStan
 - PHPUnit
 
-The CI test environment uses SQLite.
+## Operations and Troubleshooting
+
+Check the complete stack:
+
+bash
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ ps
+
+View application logs:
+
+bash
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ logs app --tail=100
+
+View queue worker logs:
+
+bash
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ logs worker --tail=100
+
+View Nginx logs:
+
+bash
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ logs web --tail=100
+
+Check failed queue jobs:
+
+bash
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ exec app php artisan queue:failed
+
+Check Laravel health:
+
+bash
+curl -i http://localhost:8000/up
+
+Restart the production stack:
+
+bash
+docker compose \
+ --env-file .env.production \
+ -f docker-compose.production.yml \
+ up -d
 
 ## Repository Structure
 
@@ -399,23 +679,21 @@ app/
 ├── Queries/
 └── Traits/
 
-The task listing query logic is currently encapsulated in:
+The task listing query logic is encapsulated in:
 
 text
 app/Queries/TaskQuery.php
 
-## Deployment Status
+Production Docker files are organized as:
 
-The repository currently contains Docker-based deployment groundwork, including:
-
-- PHP-FPM application container
-- Nginx web container
-- MySQL container
-- Persistent MySQL volume
-- Laravel health endpoint
-- Database-backed queue infrastructure
-
-Further production deployment hardening and deployment discipline are handled separately from the current Docker development setup.
+text
+Dockerfile
+docker-compose.production.yml
+docker/
+└── nginx/
+├── Dockerfile.production
+└── conf.d/
+└── app.conf
 
 ## License
 
