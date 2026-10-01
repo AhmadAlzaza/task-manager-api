@@ -4,55 +4,38 @@ This document describes the production deployment workflow for Task Manager API 
 
 The production stack separates the application into dedicated services:
 
-- Nginx web server
-- Laravel PHP-FPM application
-- MySQL database
-- Laravel queue worker
-- Database migration service
-
----
-
-## Production Architecture
-
-text
-HTTP
-|
-v
-
-        +----------------+
-        |     Nginx      |
-        |      web       |
-        +----------------+
-                 |
-              FastCGI
-                 |
-                 v
-
-        +----------------+
-        |    PHP-FPM     |
-        | Laravel App    |
-        +----------------+
-             |       |
-             |       |
-             v       v
-
-       +---------+  +-------------+
-       | MySQL 8 |  | Queue       |
-       | Database|  | Worker      |
-       +---------+  +-------------+
-
-              ^
-              |
-      +----------------+
-      | Migration      |
-      | Service        |
-      +----------------+
-
----
+```text
+                    HTTP
+                     │
+                     ▼
+              ┌─────────────┐
+              │    Nginx    │
+              │     web     │
+              └──────┬──────┘
+                     │ FastCGI
+                     ▼
+              ┌─────────────┐
+              │   PHP-FPM   │
+              │    app      │
+              └──────┬──────┘
+                     │
+              ┌──────┴──────┐
+              ▼             ▼
+        ┌───────────┐  ┌──────────────┐
+        │  MySQL 8  │  │ Queue Worker │
+        │    db     │  │    worker    │
+        └───────────┘  └──────────────┘
+              ▲
+              │
+        ┌──────────────┐
+        │  Migration   │
+        │   Service    │
+        └──────────────┘
+```
 
 ## Production Services
 
-The production Docker Compose file defines the following services:
+The production Compose file defines:
 
 | Service   | Purpose                     | Exposure        |
 | --------- | --------------------------- | --------------- |
@@ -60,39 +43,38 @@ The production Docker Compose file defines the following services:
 | `app`     | Laravel PHP-FPM application | Internal only   |
 | `worker`  | Laravel queue worker        | Internal only   |
 | `db`      | MySQL database              | Internal only   |
-| `migrate` | Runs database migrations    | No exposed port |
+| `migrate` | Database migration service  | No exposed port |
 
-MySQL is available inside the Docker network:
+MySQL is reachable internally as:
 
-text
+```text
 db:3306
+```
 
-The database port is not published externally.
-
----
+The database port is not published to the host.
 
 ## Prerequisites
 
-Required:
+Install:
 
 - Docker
 - Docker Compose
-- Production environment file
 
-Create:
+Create the production environment file:
 
-text
+```text
 .env.production
+```
 
-The file must not be committed to the repository.
+The file must never be committed to Git.
 
----
+The repository already excludes it through `.gitignore`.
 
-## Environment Configuration
+## Production Environment
 
-Minimum production configuration:
+At minimum, configure:
 
-env
+```env
 APP_ENV=production
 APP_DEBUG=false
 APP_KEY=
@@ -106,306 +88,590 @@ DB_DATABASE=
 DB_USERNAME=
 DB_PASSWORD=
 
+MYSQL_ROOT_PASSWORD=
+
 QUEUE_CONNECTION=database
 
-Secrets must never be committed:
+ADMIN_NAME=Admin
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+```
 
-text
+Depending on the deployment, configure the remaining application variables required by the application.
+
+### Required secrets
+
+The following values must never be committed:
+
+```text
 APP_KEY
 DB_PASSWORD
 MYSQL_ROOT_PASSWORD
 ADMIN_PASSWORD
+```
 
----
+### Important
+
+`DB_HOST` must be:
+
+```text
+db
+```
+
+because the Laravel containers communicate with MySQL through the Docker network.
 
 ## Build Production Images
 
 Build the Laravel application image:
 
-bash
+```bash
 docker build -t task-manager-api:phase-8-3 .
+```
 
 Build the Nginx image:
 
-bash
+```bash
 docker compose \
- --env-file .env.production \
- -f docker-compose.production.yml \
- build web
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  build web
+```
 
----
+The Nginx image copies the `public/` directory from the application image, so the Nginx image must be rebuilt whenever application assets or the Laravel `public/` directory change.
 
-## Start Production Stack
+## Start the Production Stack
 
-Start all services:
+Start the services:
 
-bash
+```bash
 docker compose \
- --env-file .env.production \
- -f docker-compose.production.yml \
- up -d
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  up -d
+```
 
-The migration service runs first.
+The startup flow is:
 
-The application and worker services start only after successful migration completion.
+```text
+db
+ ↓
+migrate
+ ↓
+app + worker
+ ↓
+web
+```
 
----
+The migration service runs only after MySQL becomes healthy.
+
+The application and queue worker start only after the migration service completes successfully.
 
 ## Verify Deployment
 
 Check service status:
 
-bash
+```bash
 docker compose \
- --env-file .env.production \
- -f docker-compose.production.yml \
- ps
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  ps
+```
 
 Expected state:
 
-text
-db healthy
-app healthy
-web healthy
-worker running
+```text
+db       healthy
+app      healthy
+web      healthy
+worker   running
+```
 
----
+The migration service is a one-shot container, so inspect it with:
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  ps -a migrate
+```
+
+Expected:
+
+```text
+migrate    exited (0)
+```
 
 ## Laravel Environment Check
 
 Run:
 
-bash
+```bash
 docker compose \
- --env-file .env.production \
- -f docker-compose.production.yml \
- exec app php artisan about
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  exec app php artisan about
+```
 
-Expected:
+Verify that the application reports values consistent with production, including:
 
-text
-Environment production
-Debug Mode OFF
-Database mysql
-Logs stderr
-Queue database
+```text
+Environment: production
+Debug Mode: OFF
+Database: mysql
+Queue: database
+Logs: stderr
+```
 
----
+## Health Checks
 
-## Migration Verification
+Laravel exposes the application health endpoint:
 
-Check migration service:
-
-bash
-docker inspect task-manager-api-migrate-1 \
- --format 'status={{.State.Status}} exit_code={{.State.ExitCode}}'
-
-Expected:
-
-text
-status=exited exit_code=0
-
----
-
-## Health Check
-
-Laravel exposes:
-
-http
+```http
 GET /up
+```
 
-Verify:
+Verify it through Nginx:
 
-bash
+```bash
 curl -i http://localhost:8000/up
+```
 
 Expected:
 
-text
+```text
 HTTP/1.1 200 OK
+```
 
----
+The Nginx container also has its own health check.
 
-# Queue Worker
+Check it with:
 
-The application uses the database queue driver:
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  ps
+```
 
-env
+## Database Verification
+
+Check that the migration table exists and migrations have completed:
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  exec app php artisan migrate:status
+```
+
+The latest migrations should show as:
+
+```text
+Ran
+```
+
+Do not run destructive migration commands such as `migrate:fresh` against a production database.
+
+## Queue Worker
+
+The application uses Laravel's database queue:
+
+```env
 QUEUE_CONNECTION=database
+```
 
-The production worker runs as a dedicated container.
+The worker is a dedicated Docker service.
 
-Worker configuration:
+Current worker configuration:
 
-text
+```text
 --sleep=3
 --tries=3
 --timeout=60
+```
 
-The worker timeout is intentionally lower than the queue `retry_after` value to reduce duplicate processing risk.
+The application queue connection uses:
 
----
+```text
+retry_after = 90 seconds
+```
 
-## Failed Jobs
+The worker timeout is intentionally lower than `retry_after` to reduce the chance of duplicate processing caused by a job becoming visible again while still running.
 
-List failed jobs:
+### Check Worker Status
 
-bash
+```bash
 docker compose \
- --env-file .env.production \
- -f docker-compose.production.yml \
- exec app php artisan queue:failed
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  ps worker
+```
 
-Retry a failed job:
+### View Queue Failed Jobs
 
-bash
+```bash
 docker compose \
- --env-file .env.production \
- -f docker-compose.production.yml \
- exec app php artisan queue:retry <job-id>
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  exec app php artisan queue:failed
+```
 
----
+### Retry a Failed Job
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  exec app php artisan queue:retry <job-id>
+```
 
 ## Logging
 
-Production Laravel logs are written to:
+Production Laravel logs are written to stderr:
 
-env
+```env
 LOG_CHANNEL=stderr
+```
 
 View application logs:
 
-bash
+```bash
 docker compose \
- --env-file .env.production \
- -f docker-compose.production.yml \
- logs app --tail=100
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  logs app --tail=100
+```
 
 View worker logs:
 
-bash
+```bash
 docker compose \
- --env-file .env.production \
- -f docker-compose.production.yml \
- logs worker --tail=100
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  logs worker --tail=100
+```
 
 View Nginx logs:
 
-bash
+```bash
 docker compose \
- --env-file .env.production \
- -f docker-compose.production.yml \
- logs web --tail=100
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  logs web --tail=100
+```
 
----
+Follow logs in real time:
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  logs -f app
+```
 
 ## Error Handling
 
-When:
+Production runs with:
 
-env
+```env
 APP_DEBUG=false
+```
 
-internal exception details are not exposed to API clients.
+Internal exception details are not returned to API clients.
 
-Example response:
+Example:
 
-json
+```json
 {
-"success": false,
-"message": "Internal Server Error",
-"errors": null
+    "success": false,
+    "message": "Internal Server Error",
+    "errors": null
 }
+```
 
-Detailed exceptions remain available through application logs.
-
----
+Detailed exception information should be investigated through container logs.
 
 ## Nginx Security Hardening
 
-Production Nginx configuration includes:
+The production Nginx configuration includes:
 
 - Disabled server version exposure
 - Security response headers
-- Hidden file restrictions
-- Docker stdout/stderr logging
+- Hidden-file protection
+- PHP request validation with `try_files`
+- FastCGI communication with the internal PHP-FPM service
+- Access logging to stdout
+- Error logging to stderr
 
-PHP version exposure is disabled:
+The database is not directly exposed through a published host port.
 
-ini
-expose_php = Off
+## Updating an Existing Production Deployment
 
----
+After pulling the latest code, rebuild the application image and the Nginx image.
 
-## Database Performance
-
-The database indexes are aligned with common query patterns.
-
-Important indexes:
-
-text
-tasks_user_id_created_at_index
-
-category_task_category_id_index
-
-The task listing query uses the composite index:
-
-text
-(user_id, created_at)
-
-Performance was verified using `EXPLAIN`.
-
----
-
-## Updating Production
-
-Pull latest code:
-
-bash
+```bash
 git pull
+```
 
-Rebuild images:
+Build the updated application image:
 
-bash
+```bash
 docker build -t task-manager-api:phase-8-3 .
+```
 
-Restart services:
+Rebuild Nginx using the updated application image:
 
-bash
+```bash
 docker compose \
- --env-file .env.production \
- -f docker-compose.production.yml \
- up -d
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  build web
+```
 
----
+Start or recreate the stack:
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  up -d
+```
+
+Verify:
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  ps
+```
+
+Then verify migrations:
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  ps -a migrate
+```
+
+And verify application health:
+
+```bash
+curl -i http://localhost:8000/up
+```
+
+## Configuration Changes
+
+When changing application environment variables, update `.env.production` and recreate the affected services:
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  up -d
+```
+
+For changes that affect the application image itself, rebuild the application image first.
+
+## Composer Dependency Changes
+
+When `composer.json` or `composer.lock` changes:
+
+```bash
+docker build -t task-manager-api:phase-8-3 .
+```
+
+Then rebuild the Nginx image:
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  build web
+```
+
+Finally restart the stack:
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  up -d
+```
 
 ## Troubleshooting
 
-Check running containers:
+### App does not start
 
-bash
+Check:
+
+```bash
 docker compose \
- --env-file .env.production \
- -f docker-compose.production.yml \
- ps
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  logs app --tail=100
+```
 
-Check application logs:
+Then check migration status:
 
-bash
+```bash
 docker compose \
- --env-file .env.production \
- -f docker-compose.production.yml \
- logs app --tail=100
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  ps -a migrate
+```
 
-Check queue worker:
+### Migration service failed
 
-bash
+View its logs:
+
+```bash
 docker compose \
- --env-file .env.production \
- -f docker-compose.production.yml \
- logs worker --tail=100
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  logs migrate
+```
 
-Check health endpoint:
+Common causes include:
 
-bash
+- Incorrect database credentials
+- Incorrect `DB_HOST`
+- Missing `MYSQL_ROOT_PASSWORD`
+- Database not becoming healthy
+- Application image containing invalid migrations
+
+### Database connection failure
+
+Confirm:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=db
+DB_PORT=3306
+```
+
+Then inspect:
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  ps
+```
+
+The MySQL service should be:
+
+```text
+healthy
+```
+
+### Queue jobs are not processed
+
+Check:
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  logs worker --tail=100
+```
+
+Then check failed jobs:
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  exec app php artisan queue:failed
+```
+
+### Nginx is unhealthy
+
+Check:
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  logs web --tail=100
+```
+
+Confirm that the application container is healthy:
+
+```bash
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  ps app
+```
+
+Then check:
+
+```bash
 curl -i http://localhost:8000/up
+```
+
+### Application changes are not visible
+
+Because the Nginx image copies the Laravel `public/` directory from the application image, rebuild both images:
+
+```bash
+docker build -t task-manager-api:phase-8-3 .
+
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  build web
+
+docker compose \
+  --env-file .env.production \
+  -f docker-compose.production.yml \
+  up -d
+```
+
+## Production Data
+
+The MySQL data directory is stored in the named Docker volume:
+
+```text
+production_dbdata
+```
+
+Inspect volumes:
+
+```bash
+docker volume ls
+```
+
+The database volume must be included in the deployment's backup strategy.
+
+Removing the volume destroys the persisted database data.
+
+Do not run:
+
+```bash
+docker compose down -v
+```
+
+against a production environment unless intentional data deletion is part of the operation.
+
+## Operational Notes
+
+This deployment is designed as a production-oriented containerized setup.
+
+It includes:
+
+```text
+Nginx
+PHP-FPM
+MySQL
+Queue worker
+Migration service
+Health checks
+Persistent database storage
+Production error handling
+Container logging
+```
+
+Additional infrastructure such as HTTPS termination, external backups, secret management, monitoring, and alerting should be provided by the deployment environment when required.
