@@ -28,7 +28,7 @@ class UpdateTaskRequest extends FormRequest
                 Rule::enum(TaskStatus::class),
             ],
             'due_date' => 'nullable|date',
-            'categories' => 'nullable|array',
+            'categories' => 'sometimes|array',
             'categories.*' => 'exists:categories,id',
         ];
     }
