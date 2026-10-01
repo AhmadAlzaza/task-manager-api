@@ -22,54 +22,79 @@ The project focuses on clean backend architecture, consistent API contracts, aut
 
 ## Key Features
 
-- Versioned API under `/api/v1`
+- Versioned REST API under `/api/v1`
 - Token-based authentication with Laravel Sanctum
-- Role-based authorization with Policies
+- Role-based authorization
+- Task ownership protection through Policies
 - Task and category management
-- Request validation with Form Requests
-- Consistent API Resources and error responses
+- Form Request validation
+- Consistent API Resources and JSON error responses
 - Named rate limiters for authentication and API endpoints
 - Database transactions for multi-step operations
-- Query Object for task listing and filtering
-- Database indexing aligned with common query patterns
-- Automated tests with PHPUnit
+- Query Object for task filtering and sorting
+- Database indexes aligned with common query patterns
+- Automated feature tests
 - Static analysis with Larastan / PHPStan
-- Code style checks with Laravel Pint
+- Code style enforcement with Laravel Pint
 - API documentation with Scribe
 - Production-oriented Docker deployment
-- Dedicated queue worker and migration service
-- Container and application health checks
+- Dedicated queue worker
+- Dedicated database migration service
+- Container health checks
+- Nginx security hardening
 
 ## Architecture
 
 The application follows a layered Laravel architecture with clear separation of responsibilities.
 
+```text
+HTTP Request
+     │
+     ▼
+Controllers
+     │
+     ├── Form Requests
+     │
+     ├── Policies
+     │
+     └── Actions / Queries
+              │
+              ▼
+            Models
+              │
+              ▼
+           Database
+```
+
+### Main Responsibilities
+
 - **Controllers** — handle HTTP requests and responses
-- **Actions** — encapsulate business operations
-- **Form Requests** — validate incoming requests
-- **Policies** — enforce authorization rules
+- **Form Requests** — validate incoming request data
+- **Actions** — encapsulate business operations and transactions
+- **Policies** — enforce authorization and task ownership
 - **Enums** — provide type-safe status and role values
-- **Query Objects** — encapsulate complex query logic
+- **Query Objects** — encapsulate task listing, filtering, searching, sorting, and pagination
 - **API Resources** — provide consistent JSON responses
-- **Jobs / Events / Listeners** — coordinate application workflows
-- **Database Transactions** — maintain consistency across multi-step operations
+- **Events / Listeners / Jobs** — coordinate asynchronous workflows
 - **Rate Limiting** — protect authentication and API endpoints
 
 ## API
 
 All API routes are versioned under:
 
-text
+```text
 /api/v1
+```
 
-## Authentication
+### Authentication
 
 The API uses Laravel Sanctum personal access tokens.
 
-Protected endpoints use bearer authentication:
+Protected endpoints require a bearer token:
 
-http
+```http
 Authorization: Bearer <token>
+```
 
 ### Authentication Endpoints
 
@@ -79,7 +104,7 @@ Authorization: Bearer <token>
 | POST   | `/api/v1/login`    | Authenticate and obtain a bearer token                |
 | POST   | `/api/v1/logout`   | Revoke all authentication tokens for the current user |
 
-## Tasks
+### Tasks
 
 | Method | Endpoint             | Description                         |
 | ------ | -------------------- | ----------------------------------- |
@@ -89,24 +114,47 @@ Authorization: Bearer <token>
 | PUT    | `/api/v1/tasks/{id}` | Update a task                       |
 | DELETE | `/api/v1/tasks/{id}` | Delete a task                       |
 
-Task listing supports filtering, searching, sorting, and pagination.
+Task listing supports:
+
+- Status filtering
+- Category filtering
+- Title and description search
+- Sorting
+- Pagination
 
 Example:
 
-http
+```http
 GET /api/v1/tasks?status=pending
+```
 
 Supported query parameters:
 
-text
+```text
 status
 category_id
 search
 sort_by
 sort_direction
 per_page
+```
 
-## Categories
+Supported `sort_by` values:
+
+```text
+due_date
+created_at
+title
+```
+
+Supported `sort_direction` values:
+
+```text
+asc
+desc
+```
+
+### Categories
 
 | Method | Endpoint                  | Description                    |
 | ------ | ------------------------- | ------------------------------ |
@@ -116,7 +164,7 @@ per_page
 | PUT    | `/api/v1/categories/{id}` | Update a category (admin only) |
 | DELETE | `/api/v1/categories/{id}` | Delete a category (admin only) |
 
-## Roles
+### Roles
 
 | Role    | Permissions                               |
 | ------- | ----------------------------------------- |
@@ -129,16 +177,15 @@ API errors follow a consistent JSON structure.
 
 Example validation response:
 
-json
+```json
 {
-"success": false,
-"message": "Validation Error",
-"errors": {
-"status": [
-"The selected status is invalid."
-]
+    "success": false,
+    "message": "Validation Error",
+    "errors": {
+        "status": ["The selected status is invalid."]
+    }
 }
-}
+```
 
 Common HTTP responses:
 
@@ -151,7 +198,208 @@ Common HTTP responses:
 | `429`  | Too many requests     |
 | `500`  | Internal server error |
 
-Production responses do not expose internal exception details when debug mode is disabled.
+When debug mode is disabled, internal exception details are not exposed to API clients.
+
+## Authentication & Authorization
+
+Authentication is implemented using Laravel Sanctum personal access tokens.
+
+Authorization is enforced through Laravel Policies and a dedicated category-management gate.
+
+### Task ownership
+
+Users can only view, update, and delete their own tasks.
+
+Attempting to access another user's task returns:
+
+```http
+403 Forbidden
+```
+
+### Category management
+
+Category creation, update, and deletion are restricted to users with the `admin` role.
+
+## Database Design
+
+The application uses:
+
+- MySQL 8.0 for the production Docker environment
+- SQLite for automated tests and default local development
+
+The database includes:
+
+```text
+users
+tasks
+categories
+category_task
+personal_access_tokens
+jobs
+failed_jobs
+cache
+sessions
+```
+
+Tasks are owned by users and can be associated with multiple categories.
+
+Foreign keys and cascade rules are used to maintain referential integrity.
+
+## Database Performance
+
+The task listing workload is supported by indexes designed around the application's common query patterns.
+
+The project includes a dedicated migration that replaces unnecessary task indexes with a composite index on:
+
+```text
+(user_id, created_at)
+```
+
+and adds an index on:
+
+```text
+category_task.category_id
+```
+
+The task listing query uses the composite user/date index for the default ordering.
+
+## Transactions
+
+Multi-step task operations are handled inside database transactions.
+
+For example, task creation and category attachment are performed atomically so a failure while attaching categories does not leave a partially created task.
+
+## Queue Processing
+
+The application uses Laravel's database queue driver.
+
+User registration triggers:
+
+```text
+UserRegistered
+      │
+      ▼
+SendWelcomeEmailListener
+      │
+      ▼
+SendWelcomeEmailJob
+      │
+      ▼
+WelcomeEmail
+```
+
+The production environment runs the queue worker as a dedicated Docker service.
+
+The welcome email job is configured with retries and backoff:
+
+```text
+tries:   3
+backoff: 10s, 30s, 60s
+```
+
+## Rate Limiting
+
+Named rate limiters are configured for authentication and API endpoints.
+
+```text
+auth-login      5 requests/minute per IP
+auth-register   5 requests/minute per IP
+api             60 requests/minute per authenticated user
+                or IP for unauthenticated traffic
+```
+
+Rate-limit failures use the same API error contract.
+
+## CORS
+
+The API uses an explicit allow-list for CORS origins.
+
+Configuration is controlled through:
+
+```text
+CORS_ALLOWED_ORIGINS
+```
+
+Credentials support is disabled because the API uses bearer-token authentication.
+
+## Testing
+
+Run the automated test suite:
+
+```bash
+php artisan test
+```
+
+The test suite covers:
+
+- Authentication
+- Authorization
+- Task ownership
+- Validation
+- Task operations
+- Category operations
+- API versioning
+- Error handling
+- Rate limiting
+- CORS
+- Token expiration
+- Filtering and search
+- Sorting and pagination
+- Database transaction behavior
+- Mass-assignment protection
+
+The current suite contains:
+
+```text
+69 tests
+205 assertions
+```
+
+## Code Quality
+
+Run Laravel Pint:
+
+```bash
+./vendor/bin/pint --test
+```
+
+Run Larastan / PHPStan:
+
+```bash
+./vendor/bin/phpstan analyse
+```
+
+Validate Composer configuration:
+
+```bash
+composer validate --no-check-publish
+```
+
+The GitHub Actions CI pipeline runs:
+
+```text
+Laravel Pint
+Larastan / PHPStan
+PHPUnit
+```
+
+The `main` branch requires the `ci` status check before merging pull requests.
+
+## API Documentation
+
+The project uses Scribe for API documentation.
+
+Generate the documentation locally:
+
+```bash
+php artisan scribe:generate
+```
+
+Generated documentation is available under:
+
+```text
+/docs
+```
 
 ## Quick Start
 
@@ -163,7 +411,7 @@ Production responses do not expose internal exception details when debug mode is
 
 ### Installation
 
-bash
+```bash
 git clone https://github.com/AhmadAlzaza/task-manager-api.git
 
 cd task-manager-api
@@ -181,105 +429,65 @@ php artisan migrate
 php artisan db:seed
 
 php artisan serve
+```
 
 The API will be available at:
 
-text
+```text
 http://127.0.0.1:8000
+```
 
 The default `.env.example` configuration uses SQLite for local development.
 
-The admin seeder requires:
+### Admin Seeder
 
-env
+The admin seeder uses:
+
+```env
 ADMIN_NAME=Admin
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=
+```
 
-Set `ADMIN_PASSWORD` before running the seeder.
+Set `ADMIN_PASSWORD` before running:
 
-## Testing
+```bash
+php artisan db:seed
+```
 
-Run the automated test suite:
-
-bash
-php artisan test
-
-The test suite covers:
-
-- Authentication
-- Authorization
-- Validation
-- Task and category operations
-- API behavior
-- Error handling
-- Rate limiting
-- Configuration behavior
-- Query behavior
-
-The CI test environment uses SQLite.
-
-## Code Quality
-
-Run Laravel Pint:
-
-bash
-./vendor/bin/pint --test
-
-Run Larastan / PHPStan:
-
-bash
-./vendor/bin/phpstan analyse
-
-The repository uses GitHub Actions to run:
-
-- Laravel Pint
-- Larastan / PHPStan
-- PHPUnit
-
-## API Documentation
-
-The project uses Scribe for API documentation.
-
-Generate documentation locally:
-
-bash
-php artisan scribe:generate
-
-Generated documentation is available under:
-
-text
-/docs
+In production, `ADMIN_PASSWORD` is required.
 
 ## Production Deployment
 
-The project includes a production-oriented Docker setup with:
+The repository includes a production-oriented Docker Compose setup with:
 
-- PHP 8.3 FPM
-- Nginx
-- MySQL 8.0
-- Dedicated Laravel queue worker
-- Dedicated migration service
-- Persistent database storage
-- Application and web health checks
-- Docker-based logging
-- Production error handling
+```text
+Nginx
+PHP-FPM
+MySQL 8.0
+Laravel queue worker
+Dedicated migration service
+Persistent database storage
+Application health checks
+Web health checks
+Production logging
+```
 
-For the complete deployment procedure, verification steps, queue operations, logging, and troubleshooting:
+For the complete production deployment procedure, environment configuration, verification steps, queue operations, logging, and troubleshooting:
 
-See:
-
-text
-docs/DEPLOYMENT.md
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Repository Structure
 
-text
+```text
 app/
 ├── Actions/
 ├── Enums/
 ├── Events/
 ├── Http/
+│   ├── Controllers/
+│   ├── Requests/
+│   └── Resources/
 ├── Jobs/
 ├── Listeners/
 ├── Mail/
@@ -289,23 +497,66 @@ app/
 ├── Queries/
 └── Traits/
 
-The task listing query logic is encapsulated in:
-
-text
-app/Queries/TaskQuery.php
-
-Production Docker files:
-
-text
-Dockerfile
-docker-compose.production.yml
+database/
+├── factories/
+├── migrations/
+└── seeders/
 
 docker/
 └── nginx/
-├── Dockerfile.production
-└── conf.d/
-└── app.conf
+    ├── Dockerfile.production
+    └── conf.d/
+        └── app.conf
 
-## License
+docs/
+└── DEPLOYMENT.md
 
-This project is licensed under the MIT License.
+tests/
+└── Feature/
+
+Dockerfile
+docker-compose.production.yml
+```
+
+The main task listing query logic is encapsulated in:
+
+```text
+app/Queries/TaskQuery.php
+```
+
+The production application image is built from:
+
+```text
+Dockerfile
+```
+
+The Nginx image is defined by:
+
+```text
+docker/nginx/Dockerfile.production
+```
+
+## Project Status
+
+This project is intentionally focused on backend engineering fundamentals rather than feature volume.
+
+The current implementation demonstrates:
+
+```text
+REST API design
+Authentication
+Authorization
+Validation
+Database design
+Query optimization
+Transactions
+Queue processing
+Rate limiting
+CORS
+Error handling
+Automated testing
+Static analysis
+Containerization
+Production-oriented deployment
+CI quality gates
+```

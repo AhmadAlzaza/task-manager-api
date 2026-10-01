@@ -3,8 +3,7 @@
     "name": "ahmadalzaza/task-manager-api",
     "type": "project",
     "description": "Production-oriented RESTful Task Manager API built with Laravel 13.",
-   "keywords": ["laravel","php","rest-api","task-manager","sanctum","docker"],
-    "license": "MIT",
+   "keywords": ["laravel", "php", "rest-api", "task-manager", "sanctum", "docker"],
     "require": {
         "php": "^8.3",
         "laravel/framework": "^13.0",
