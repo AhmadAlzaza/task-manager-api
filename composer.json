@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "ahmadalzaza/task-manager-api",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "Production-oriented RESTful Task Manager API built with Laravel 13.",
+   "keywords": ["laravel","php","rest-api","task-manager","sanctum","docker"],
     "license": "MIT",
     "require": {
         "php": "^8.3",

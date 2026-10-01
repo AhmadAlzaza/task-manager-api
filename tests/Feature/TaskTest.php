@@ -30,6 +30,20 @@ class TaskTest extends TestCase
             ->assertJsonStructure(['data' => ['id', 'title', 'status']]);
     }
 
+    public function test_create_task_rejects_null_categories(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->postJson('/api/v1/tasks', [
+            'title' => 'Test Task',
+            'description' => 'Test description',
+            'categories' => null,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['categories']);
+    }
+
     public function test_user_can_get_tasks()
     {
         $user = User::factory()->create();
@@ -53,6 +67,24 @@ class TaskTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonPath('data.status', $newStatus);
+    }
+
+    public function test_update_task_rejects_null_categories(): void
+    {
+        $user = User::factory()->create();
+
+        $task = Task::factory()->create([
+            'user_id' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user)->putJson("/api/v1/tasks/{$task->id}", [
+            'title' => 'Updated Task',
+            'description' => 'Updated description',
+            'categories' => null,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['categories']);
     }
 
     public function test_user_cannot_update_other_users_task()
