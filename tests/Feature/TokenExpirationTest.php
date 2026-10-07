@@ -18,7 +18,6 @@ class TokenExpirationTest extends TestCase
     {
         $user = User::factory()->create();
 
-        // Explicitly set expiration to 24 hours from now
         $expiresAt = Carbon::now()->addMinutes(1440);
         $token = $user->createToken('test-token', ['*'], $expiresAt)->plainTextToken;
 
@@ -34,7 +33,6 @@ class TokenExpirationTest extends TestCase
     {
         $user = User::factory()->create();
 
-        // Explicitly set expiration to 24 hours from now
         $expiresAt = Carbon::now()->addMinutes(1440);
 
         $token = $user->createToken(
@@ -43,10 +41,8 @@ class TokenExpirationTest extends TestCase
             $expiresAt
         )->plainTextToken;
 
-        // Travel 25 hours into the future
         $this->travel(25)->hours();
 
-        // Re-request with the expired token
         $this->withHeaders(['Authorization' => 'Bearer '.$token])
             ->getJson('/api/v1/tasks')
             ->assertStatus(401);

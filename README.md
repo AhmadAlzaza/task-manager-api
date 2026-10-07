@@ -98,11 +98,11 @@ Authorization: Bearer <token>
 
 ### Authentication Endpoints
 
-| Method | Endpoint           | Description                                           |
-| ------ | ------------------ | ----------------------------------------------------- |
-| POST   | `/api/v1/register` | Register a new user                                   |
-| POST   | `/api/v1/login`    | Authenticate and obtain a bearer token                |
-| POST   | `/api/v1/logout`   | Revoke all authentication tokens for the current user |
+| Method | Endpoint           | Description                             |
+| ------ | ------------------ | --------------------------------------- |
+| POST   | `/api/v1/register` | Register a new user                     |
+| POST   | `/api/v1/login`    | Authenticate and obtain a bearer token  |
+| POST   | `/api/v1/logout`   | Revoke the current authentication token |
 
 ### Tasks
 

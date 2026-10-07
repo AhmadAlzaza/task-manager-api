@@ -15,7 +15,6 @@ class ErrorContractTest extends TestCase
     {
         parent::setUp();
 
-        // إعداد مسارات وهمية داخل مساحة /api/ لاختبار الاستثناءات
         Route::get('/api/test-validation', function () {
             throw ValidationException::withMessages(['email' => ['The email field is invalid.']]);
         });
@@ -39,7 +38,7 @@ class ErrorContractTest extends TestCase
 
     public function test_404_not_found_follows_contract(): void
     {
-        // طلب مسار غير موجود إطلاقاً
+
         $response = $this->getJson('/api/this-route-does-not-exist-12345');
 
         $response->assertStatus(404)

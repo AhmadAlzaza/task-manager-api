@@ -238,7 +238,6 @@ class TaskTest extends TestCase
                 'due_date' => $task->due_date,
             ], $user, [999999]);
         } catch (\Throwable) {
-            // متوقع
         }
 
         $this->assertDatabaseMissing('tasks', ['title' => $task->title]);
@@ -249,7 +248,6 @@ class TaskTest extends TestCase
         $userA = User::factory()->create();
         $userB = User::factory()->create();
 
-        // محاولة إنشاء task باسم userB
         $response = $this->actingAs($userA, 'sanctum')
             ->postJson('/api/v1/tasks', [
                 'title' => 'Attempt Hack',
@@ -290,10 +288,6 @@ class TaskTest extends TestCase
 
         $this->assertTrue(Gate::forUser($user)->allows('create', Task::class));
     }
-
-    // =========================================================================
-    // اختبارات الفلاتر الجديدة للـ Index التي تم نقلها لـ TaskQuery
-    // =========================================================================
 
     public function test_index_can_filter_by_category()
     {
@@ -360,7 +354,6 @@ class TaskTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonCount(5, 'data');
 
-        // التعديل هنا: فصلناها واستخدمنا $this بدلاً من $response
         $this->assertNotNull($response->json('meta.current_page'));
     }
 
@@ -409,7 +402,6 @@ class TaskTest extends TestCase
         $categoryX = Category::factory()->create();
         $categoryY = Category::factory()->create();
 
-        // Matching Task: search + status + category
         $matchingTask = Task::factory()->create([
             'user_id' => $user->id,
             'title' => 'fix the database connection',
@@ -417,7 +409,6 @@ class TaskTest extends TestCase
         ]);
         $matchingTask->categories()->attach($categoryX);
 
-        // Decoy 1: fails on status
         $decoy1 = Task::factory()->create([
             'user_id' => $user->id,
             'title' => 'fix the UI bug',
@@ -425,7 +416,6 @@ class TaskTest extends TestCase
         ]);
         $decoy1->categories()->attach($categoryX);
 
-        // Decoy 2: fails on search
         $decoy2 = Task::factory()->create([
             'user_id' => $user->id,
             'title' => 'update documentation',
@@ -433,7 +423,6 @@ class TaskTest extends TestCase
         ]);
         $decoy2->categories()->attach($categoryX);
 
-        // Decoy 3: fails on category
         $decoy3 = Task::factory()->create([
             'user_id' => $user->id,
             'title' => 'fix the server config',

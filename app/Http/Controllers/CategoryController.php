@@ -6,17 +6,15 @@ use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
-use App\Traits\ApiResponse; // 👈 استيراد الـ Trait
+use App\Traits\ApiResponse;
 use Illuminate\Support\Facades\Cache;
 
 /**
  * @group Categories
- * القراءة (index, show) لأي مستخدم مسجّل.
- * الكتابة (store, update, destroy) لـ role=admin فقط — 403 لغيره.
  */
 class CategoryController extends Controller
 {
-    use ApiResponse; // 👈 تفعيل الـ Trait
+    use ApiResponse;
 
     private const CACHE_KEY = 'categories.all';
 
@@ -33,7 +31,7 @@ class CategoryController extends Controller
 
     public function store(StoreCategoryRequest $request)
     {
-        $this->authorize('create', Category::class); // 👈 حماية المسار للمدير فقط
+        $this->authorize('create', Category::class);
 
         $category = Category::create($request->validated());
 
@@ -49,7 +47,7 @@ class CategoryController extends Controller
 
     public function update(UpdateCategoryRequest $request, Category $category)
     {
-        $this->authorize('update', $category); // 👈 حماية المسار للمدير فقط
+        $this->authorize('update', $category);
 
         $category->update($request->validated());
 
@@ -60,7 +58,7 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
-        $this->authorize('delete', $category); // 👈 حماية المسار للمدير فقط
+        $this->authorize('delete', $category);
 
         $category->delete();
 
