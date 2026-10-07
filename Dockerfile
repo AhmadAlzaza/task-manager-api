@@ -75,9 +75,71 @@ RUN composer dump-autoload \
 # Generate Laravel's production package manifest.
 RUN php artisan package:discover --ansi
 
+# -----------------------------------------------------------------------------
+# Stage 3: Generate static API documentation
+# -----------------------------------------------------------------------------
+FROM php-extensions AS docs
+
+ARG DOCS_BASE_URL=http://localhost:8000
+
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+        libsqlite3-dev \
+    && docker-php-ext-install pdo_sqlite \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www
+
+COPY . .
+
+RUN mkdir -p \
+    bootstrap/cache \
+    database \
+    storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs
+
+# Prepare an isolated SQLite environment for Scribe generation.
+RUN touch database/database.sqlite \
+    && cp .env.example .env
+
+# Use the deployment URL when generating static documentation.
+ENV APP_URL=${DOCS_BASE_URL}
+
+# Install development dependencies because Scribe is require-dev.
+RUN composer install \
+    --no-interaction \
+    --no-progress \
+    --prefer-dist \
+    --optimize-autoloader \
+    --no-scripts
+
+# Generate the application key after Composer dependencies are available.
+RUN php artisan key:generate --force
+
+# Generate Laravel's package manifest.
+RUN php artisan package:discover --ansi
+
+# Ensure the documentation database is ready.
+RUN DB_CONNECTION=sqlite \
+    DB_DATABASE=/var/www/database/database.sqlite \
+    php artisan migrate --force
+
+# Generate static documentation into public/docs/.
+RUN DB_CONNECTION=sqlite \
+    DB_DATABASE=/var/www/database/database.sqlite \
+    php artisan scribe:generate
+
 
 # -----------------------------------------------------------------------------
-# Stage 3: Production PHP-FPM runtime
+# Stage 4: Production PHP-FPM runtime
 # -----------------------------------------------------------------------------
 FROM php:8.3-fpm-bookworm AS runtime
 
@@ -106,6 +168,9 @@ WORKDIR /var/www
 
 # Copy the prepared production application.
 COPY --from=build /var/www /var/www
+
+# Copy generated static API documentation.
+COPY --from=docs /var/www/public/docs /var/www/public/docs
 
 # Ensure Laravel writable directories exist and have the correct permissions.
 RUN mkdir -p \

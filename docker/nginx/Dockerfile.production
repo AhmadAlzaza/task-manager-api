@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG APP_IMAGE=task-manager-api:phase-8-3
+ARG APP_IMAGE=task-manager-api:phase-8-6
 
 # Use the already-built Laravel production image as the source
 # for the public/ directory.
