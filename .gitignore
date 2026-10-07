@@ -26,6 +26,7 @@ Thumbs.db
 task_manager_api
 # Scribe generated docs (regenerate via php artisan scribe:generate)
 /.scribe/
+/public/docs/
 /public/vendor/scribe/
 /resources/views/scribe/
 # Generated files

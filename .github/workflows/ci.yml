@@ -34,6 +34,18 @@ jobs:
           mkdir -p database
           touch database/database.sqlite
 
+      - name: Run Database Migrations
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+        run: php artisan migrate --force
+
+      - name: Generate API Documentation
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+        run: php artisan scribe:generate
+
       - name: Code Style Check (Laravel Pint)
         run: ./vendor/bin/pint --test
 

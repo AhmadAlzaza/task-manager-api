@@ -125,7 +125,9 @@ because the Laravel containers communicate with MySQL through the Docker network
 Build the Laravel application image:
 
 ```bash
-docker build -t task-manager-api:phase-8-3 .
+docker build \
+  --build-arg DOCS_BASE_URL=http://localhost:8000 \
+  -t task-manager-api:phase-8-6 .
 ```
 
 Build the Nginx image:
@@ -138,6 +140,9 @@ docker compose \
 ```
 
 The Nginx image copies the `public/` directory from the application image, so the Nginx image must be rebuilt whenever application assets or the Laravel `public/` directory change.
+Static API documentation is generated automatically during the application image build.
+The documentation base URL is supplied through the `DOCS_BASE_URL` build argument.
+Scribe remains a development dependency and is not included in the production runtime image.
 
 ## Start the Production Stack
 
@@ -416,7 +421,9 @@ git pull
 Build the updated application image:
 
 ```bash
-docker build -t task-manager-api:phase-8-3 .
+docker build \
+  --build-arg DOCS_BASE_URL=http://localhost:8000 \
+  -t task-manager-api:phase-8-6 .
 ```
 
 Rebuild Nginx using the updated application image:
@@ -479,7 +486,9 @@ For changes that affect the application image itself, rebuild the application im
 When `composer.json` or `composer.lock` changes:
 
 ```bash
-docker build -t task-manager-api:phase-8-3 .
+docker build \
+  --build-arg DOCS_BASE_URL=http://localhost:8000 \
+  -t task-manager-api:phase-8-6 .
 ```
 
 Then rebuild the Nginx image:
@@ -617,7 +626,9 @@ curl -i http://localhost:8000/up
 Because the Nginx image copies the Laravel `public/` directory from the application image, rebuild both images:
 
 ```bash
-docker build -t task-manager-api:phase-8-3 .
+docker build \
+  --build-arg DOCS_BASE_URL=http://localhost:8000 \
+  -t task-manager-api:phase-8-6 .
 
 docker compose \
   --env-file .env.production \
