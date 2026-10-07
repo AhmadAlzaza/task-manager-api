@@ -57,3 +57,129 @@ jobs:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
         run: php artisan test
+
+      - name: Prepare Docker Test Environment
+        run: |
+          APP_KEY="$(php -r "echo 'base64:'.base64_encode(random_bytes(32));")"
+
+          cat > .env.production <<EOF
+          APP_NAME=Task Manager API
+          APP_ENV=production
+          APP_KEY=${APP_KEY}
+          APP_DEBUG=false
+          APP_URL=http://localhost:8000
+
+          APP_LOCALE=en
+          APP_FALLBACK_LOCALE=en
+          APP_FAKER_LOCALE=en_US
+
+          APP_MAINTENANCE_DRIVER=file
+
+          BCRYPT_ROUNDS=4
+
+          ADMIN_NAME=Admin
+          ADMIN_EMAIL=admin@example.com
+          ADMIN_PASSWORD=admin-password
+
+          LOG_CHANNEL=stderr
+          LOG_LEVEL=error
+
+          DB_CONNECTION=mysql
+          DB_HOST=db
+          DB_PORT=3306
+          DB_DATABASE=task_manager
+          DB_USERNAME=task_manager
+          DB_PASSWORD=task_manager_password
+          MYSQL_ROOT_PASSWORD=root-password
+
+          SESSION_DRIVER=database
+          SESSION_LIFETIME=120
+          SESSION_ENCRYPT=false
+          SESSION_PATH=/
+          SESSION_DOMAIN=null
+
+          BROADCAST_CONNECTION=log
+          FILESYSTEM_DISK=local
+          QUEUE_CONNECTION=database
+          CACHE_STORE=database
+
+          MAIL_MAILER=log
+          MAIL_FROM_ADDRESS=hello@example.com
+          MAIL_FROM_NAME="Task Manager API"
+
+          CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://127.0.0.1:8000
+          EOF
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build Laravel Production Image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          tags: task-manager-api:phase-8-6
+          build-args: |
+            DOCS_BASE_URL=http://localhost:8000
+
+      - name: Build Nginx Production Image
+        run: |
+          docker compose \
+            --env-file .env.production \
+            -f docker-compose.production.yml \
+            -p task-manager-ci \
+            build web
+
+      - name: Start Production Stack
+        run: |
+          docker compose \
+            --env-file .env.production \
+            -f docker-compose.production.yml \
+            -p task-manager-ci \
+            up -d --wait --wait-timeout 120
+
+      - name: Run Docker Smoke Tests
+        run: |
+          curl --fail --silent --show-error \
+            http://localhost:8000/up
+
+          curl --fail --silent --show-error \
+            http://localhost:8000/docs/
+
+          curl --fail --silent --show-error \
+            http://localhost:8000/docs/openapi.yaml
+
+          response_code="$(curl -s -o /tmp/not-found.json -w '%{http_code}' \
+            http://localhost:8000/api/v1/not-existing)"
+
+          test "$response_code" = "404"
+
+          jq -e '.success == false' /tmp/not-found.json
+          jq -e '.message == "Resource not found"' /tmp/not-found.json
+
+      - name: Show Docker Logs on Failure
+        if: failure()
+        run: |
+          docker compose \
+            --env-file .env.production \
+            -f docker-compose.production.yml \
+            -p task-manager-ci \
+            ps -a
+
+          docker compose \
+            --env-file .env.production \
+            -f docker-compose.production.yml \
+            -p task-manager-ci \
+            logs --no-color
+
+      - name: Cleanup Docker Stack
+        if: always()
+        run: |
+          docker compose \
+            --env-file .env.production \
+            -f docker-compose.production.yml \
+            -p task-manager-ci \
+            down -v
+
+          rm -f .env.production
