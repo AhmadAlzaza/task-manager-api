@@ -4,7 +4,7 @@ namespace App\Policies;
 
 use App\Enums\UserRole;
 use App\Models\Category;
-use App\Models\User; // 👈 استيراد الـ Enum
+use App\Models\User;
 
 class CategoryPolicy
 {

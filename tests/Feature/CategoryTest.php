@@ -46,7 +46,7 @@ class CategoryTest extends TestCase
 
     public function test_admin_can_create_category()
     {
-        // 👇 إنشاء مستخدم بصلاحية مدير
+
         $admin = User::factory()->create(['role' => UserRole::ADMIN]);
 
         $categoryData = [
@@ -65,14 +65,13 @@ class CategoryTest extends TestCase
 
     public function test_normal_user_cannot_create_category()
     {
-        // 👇 إنشاء مستخدم عادي
+
         $user = User::factory()->create(['role' => UserRole::USER]);
 
         $response = $this->actingAs($user, 'sanctum')->postJson('/api/v1/categories', [
             'name' => 'New Category',
         ]);
 
-        // يجب أن يتم رفضه لأنه ليس مديراً
         $response->assertStatus(403);
     }
 
@@ -119,7 +118,6 @@ class CategoryTest extends TestCase
                 'message' => 'Category deleted successfully',
             ]);
 
-        // التأكد من أن التصنيف تم حذفه فعلياً من قاعدة البيانات
         $this->assertDatabaseMissing('categories', ['id' => $category->id]);
     }
 
@@ -132,7 +130,6 @@ class CategoryTest extends TestCase
 
         $response->assertStatus(403);
 
-        // التأكد من أن التصنيف لم يتم حذفه من قاعدة البيانات
         $this->assertDatabaseHas('categories', ['id' => $category->id]);
     }
 }

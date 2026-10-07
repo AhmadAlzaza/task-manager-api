@@ -7,7 +7,7 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
-use App\Traits\ApiResponse; // 👈 استيراد الـ Trait
+use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 /** @group Authentication */
 class AuthController extends Controller
 {
-    use ApiResponse; // 👈 تفعيل الـ Trait
+    use ApiResponse;
 
     /**
      * @unauthenticated
@@ -65,9 +65,14 @@ class AuthController extends Controller
         ], 'Logged in successfully');
     }
 
+    /**
+     * Revoke the current authentication token.
+     *
+     * Other tokens owned by the user remain active.
+     */
     public function logout(Request $request)
     {
-        $request->user()->tokens()->delete();
+        $request->user()->currentAccessToken()->delete();
 
         return $this->successResponse(null, 'Logged out successfully');
     }

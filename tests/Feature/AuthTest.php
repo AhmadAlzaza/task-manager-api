@@ -27,7 +27,7 @@ class AuthTest extends TestCase
             'password' => Str::random(12),
         ]);
 
-        $response->assertStatus(201) // أو 200 في اللوجن
+        $response->assertStatus(201)
             ->assertJsonStructure([
                 'data' => ['token', 'user'],
                 'success',
@@ -54,25 +54,39 @@ class AuthTest extends TestCase
             ]);
     }
 
-    public function test_user_can_logout()
+    public function test_user_can_logout_only_current_token()
     {
         $user = User::factory()->create();
 
-        $token = $user->createToken('test-token')->plainTextToken;
+        $currentToken = $user->createToken('current-token')->plainTextToken;
+        $otherToken = $user->createToken('other-token')->plainTextToken;
 
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer '.$token,
+            'Authorization' => 'Bearer '.$currentToken,
         ])->postJson('/api/v1/logout');
 
         $response->assertStatus(200)
-            ->assertJson(['message' => 'Logged out successfully']);
+            ->assertJson([
+                'success' => true,
+                'message' => 'Logged out successfully',
+                'data' => null,
+            ]);
+
+        $this->assertDatabaseCount('personal_access_tokens', 1);
 
         Auth::forgetGuards();
 
         $this->withHeaders([
-            'Authorization' => 'Bearer '.$token,
+            'Authorization' => 'Bearer '.$currentToken,
         ])->getJson('/api/v1/tasks')
-            ->assertStatus(401);
+            ->assertUnauthorized();
+
+        Auth::forgetGuards();
+
+        $this->withHeaders([
+            'Authorization' => 'Bearer '.$otherToken,
+        ])->getJson('/api/v1/tasks')
+            ->assertOk();
     }
 
     public function test_user_cannot_register_with_duplicate_email()

@@ -20,7 +20,7 @@ class CorsTest extends TestCase
      */
     public function test_cors_allows_requests_from_allowed_origin(): void
     {
-        // 1. Unauthenticated request (Expect 401, but CORS headers should be present)
+
         $response = $this->withHeaders([
             'Origin' => self::ALLOWED_ORIGIN,
         ])->getJson('/api/v1/tasks');
@@ -28,7 +28,6 @@ class CorsTest extends TestCase
         $response->assertStatus(401)
             ->assertHeader('Access-Control-Allow-Origin', self::ALLOWED_ORIGIN);
 
-        // 2. Authenticated request (Expect 200, and CORS headers should be present)
         Sanctum::actingAs(User::factory()->create());
 
         $authResponse = $this->withHeaders([
@@ -48,7 +47,6 @@ class CorsTest extends TestCase
             'Origin' => self::UNTRUSTED_ORIGIN,
         ])->getJson('/api/v1/tasks');
 
-        // The request might hit the server (401), but the browser won't read it due to missing header
         $response->assertStatus(401)
             ->assertHeaderMissing('Access-Control-Allow-Origin');
     }
@@ -63,10 +61,8 @@ class CorsTest extends TestCase
             'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'POST',
         ]);
 
-        // Assert the request is generally successful (usually 200 or 204 in Laravel)
         $response->assertSuccessful();
 
-        // Assert the core CORS headers are present for the preflight
         $response->assertHeader('Access-Control-Allow-Origin', self::ALLOWED_ORIGIN);
         $response->assertHeader('Access-Control-Allow-Methods');
     }
@@ -87,7 +83,6 @@ class CorsTest extends TestCase
         $allowedHeaders = $response->headers->get('Access-Control-Allow-Headers');
         $this->assertNotNull($allowedHeaders, 'Access-Control-Allow-Headers header is missing');
 
-        // Use strtolower to make the check case-insensitive (HTTP headers are case-insensitive)
         $this->assertStringContainsString('authorization', strtolower($allowedHeaders));
         $this->assertStringContainsString('content-type', strtolower($allowedHeaders));
     }
