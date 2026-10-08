@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Events\UserRegistered;
 use App\Jobs\SendWelcomeEmailJob;
 use App\Models\User;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Bus;
@@ -52,6 +53,31 @@ class AuthTest extends TestCase
                 'success',
                 'message',
             ]);
+    }
+
+    public function test_user_can_login_without_session_authentication()
+    {
+        Event::fake([Login::class]);
+
+        $password = Str::random(12);
+
+        $user = User::factory()->create([
+            'password' => $password,
+        ]);
+
+        $response = $this->postJson('/api/v1/login', [
+            'email' => $user->email,
+            'password' => $password,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => ['token', 'user'],
+                'success',
+                'message',
+            ]);
+
+        Event::assertNotDispatched(Login::class);
     }
 
     public function test_user_can_logout_only_current_token()
