@@ -59,6 +59,28 @@ class RateLimitTest extends TestCase
         $response->assertStatus(429);
     }
 
+    public function test_login_email_limit_is_isolated_per_email(): void
+    {
+        $payload = [
+            'email' => 'first@example.com',
+            'password' => 'wrongpassword',
+        ];
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->postJson('/api/v1/login', $payload);
+        }
+
+        $this->postJson('/api/v1/login', $payload)
+            ->assertStatus(429);
+
+        $response = $this->postJson('/api/v1/login', [
+            'email' => 'second@example.com',
+            'password' => 'wrongpassword',
+        ]);
+
+        $response->assertStatus(401);
+    }
+
     public function test_429_response_matches_error_contract(): void
     {
         $user = User::factory()->create();

@@ -80,6 +80,57 @@ class AuthTest extends TestCase
         Event::assertNotDispatched(Login::class);
     }
 
+    public function test_registration_normalizes_email(): void
+    {
+        $password = Str::random(12);
+
+        $response = $this->postJson('/api/v1/register', [
+            'name' => 'Ahmad',
+            'email' => '  AHMAD@Example.COM  ',
+            'password' => $password,
+        ]);
+
+        $response->assertStatus(201);
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'ahmad@example.com',
+        ]);
+    }
+
+    public function test_user_can_login_with_normalized_email_input(): void
+    {
+        $password = Str::random(12);
+
+        User::factory()->create([
+            'email' => 'ahmad@example.com',
+            'password' => $password,
+        ]);
+
+        $response = $this->postJson('/api/v1/login', [
+            'email' => '  AHMAD@EXAMPLE.COM  ',
+            'password' => $password,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => ['token', 'user'],
+                'success',
+                'message',
+            ]);
+    }
+
+    public function test_user_cannot_register_with_weak_password(): void
+    {
+        $response = $this->postJson('/api/v1/register', [
+            'name' => 'Weak Password User',
+            'email' => 'weak@example.com',
+            'password' => 'Password12',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('password');
+    }
+
     public function test_user_can_logout_only_current_token()
     {
         $user = User::factory()->create();
@@ -211,7 +262,7 @@ class AuthTest extends TestCase
         $response = $this->postJson('/api/v1/register', [
             'name' => 'Hacker User',
             'email' => 'hacker@example.com',
-            'password' => 'password123',
+            'password' => 'password1234',
             'role' => 'admin',
         ]);
 
@@ -221,5 +272,20 @@ class AuthTest extends TestCase
         $this->assertNotNull($user);
 
         $this->assertEquals(UserRole::USER, $user->role);
+    }
+
+    public function test_login_ip_rate_limit_returns_429(): void
+    {
+        for ($i = 0; $i < 10; $i++) {
+            $this->postJson('/api/v1/login', [
+                'email' => "user{$i}@example.com",
+                'password' => 'wrongpassword',
+            ]);
+        }
+
+        $this->postJson('/api/v1/login', [
+            'email' => 'user10@example.com',
+            'password' => 'wrongpassword',
+        ])->assertStatus(429);
     }
 }
