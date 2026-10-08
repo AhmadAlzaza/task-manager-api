@@ -117,7 +117,7 @@ services:
       context: .
       dockerfile: docker/nginx/Dockerfile.production
       args:
-        APP_image: ${APP_IMAGE:-task-manager-api:phase-8-6}
+        APP_IMAGE: ${APP_IMAGE:-task-manager-api:phase-8-6}
 
     image: task-manager-api-nginx:phase-8-6
     restart: unless-stopped
