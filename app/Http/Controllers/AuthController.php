@@ -50,7 +50,7 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request)
     {
-        if (! Auth::attempt($request->only('email', 'password'))) {
+        if (! Auth::once($request->only('email', 'password'))) {
             return $this->errorResponse('Invalid credentials', 401);
         }
 
