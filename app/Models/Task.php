@@ -14,18 +14,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 
 /**
- * @property-read User $user
  * @property int $id
  * @property int $user_id
  * @property string $title
  * @property string|null $description
- * @property string $status
+ * @property TaskStatus $status
  * @property Carbon|null $due_date
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read User $user
  * @property-read Collection<int, Category> $categories
  * @property-read int|null $categories_count
- * @property-read User $user
  *
  * @method static \Database\Factories\TaskFactory factory($count = null, $state = [])
  * @method static Builder<static>|Task newModelQuery()

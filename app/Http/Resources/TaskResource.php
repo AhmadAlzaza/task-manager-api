@@ -2,16 +2,18 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\TaskStatus;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property string $title
- * @property string $description
- * @property string $status
- * @property string $due_date
+ * @property string|null $description
+ * @property TaskStatus $status
+ * @property Carbon|null $due_date
  * @property User $user
  */
 class TaskResource extends JsonResource
