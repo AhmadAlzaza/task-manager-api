@@ -59,8 +59,8 @@ class TaskTest extends TestCase
     {
         $user = User::factory()->create();
         $task = Task::factory()->create(['user_id' => $user->id]);
-        $statuses = ['pending', 'in_progress', 'completed'];
-        $newStatus = fake()->randomElement($statuses);
+        $newStatus = 'completed';
+
         $response = $this->actingAs($user, 'sanctum')->putJson("/api/v1/tasks/{$task->id}", [
             'status' => $newStatus,
         ]);
@@ -92,8 +92,8 @@ class TaskTest extends TestCase
         $user = User::factory()->create();
         $otherUser = User::factory()->create();
         $task = Task::factory()->create(['user_id' => $otherUser->id]);
-        $statuses = ['pending', 'in_progress', 'completed'];
-        $newStatus = fake()->randomElement($statuses);
+        $newStatus = 'completed';
+
         $response = $this->actingAs($user, 'sanctum')->putJson("/api/v1/tasks/{$task->id}", [
             'status' => $newStatus,
         ]);
@@ -106,6 +106,7 @@ class TaskTest extends TestCase
         $user = User::factory()->create();
         $otherUser = User::factory()->create();
         $task = Task::factory()->create(['user_id' => $otherUser->id]);
+
         $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/v1/tasks/{$task->id}");
 
         $response->assertStatus(403);
@@ -125,8 +126,14 @@ class TaskTest extends TestCase
     public function test_user_can_filter_tasks_by_status()
     {
         $user = User::factory()->create();
-        Task::factory(2)->create(['user_id' => $user->id, 'status' => 'pending']);
-        Task::factory(3)->create(['user_id' => $user->id, 'status' => 'completed']);
+        Task::factory(2)->create([
+            'user_id' => $user->id,
+            'status' => 'pending',
+        ]);
+        Task::factory(3)->create([
+            'user_id' => $user->id,
+            'status' => 'completed',
+        ]);
 
         $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks?status=pending');
 
@@ -208,6 +215,7 @@ class TaskTest extends TestCase
         $user = User::factory()->create();
         $task = Task::factory()->create(['user_id' => $user->id]);
         $oldCategory = Category::factory()->create();
+
         $task->categories()->attach($oldCategory);
 
         $newCategories = Category::factory(2)->create();
@@ -240,7 +248,9 @@ class TaskTest extends TestCase
         } catch (\Throwable) {
         }
 
-        $this->assertDatabaseMissing('tasks', ['title' => $task->title]);
+        $this->assertDatabaseMissing('tasks', [
+            'title' => $task->title,
+        ]);
     }
 
     public function test_user_cannot_assign_task_to_another_user_via_create_payload()
@@ -277,6 +287,7 @@ class TaskTest extends TestCase
         $response->assertStatus(200);
 
         $task->refresh();
+
         $this->assertEquals($userA->id, $task->user_id);
     }
 
@@ -294,12 +305,17 @@ class TaskTest extends TestCase
         $user = User::factory()->create();
         $category = Category::factory()->create();
 
-        $taskWithCategory = Task::factory()->create(['user_id' => $user->id]);
+        $taskWithCategory = Task::factory()->create([
+            'user_id' => $user->id,
+        ]);
         $taskWithCategory->categories()->attach($category);
 
-        Task::factory()->create(['user_id' => $user->id]);
+        Task::factory()->create([
+            'user_id' => $user->id,
+        ]);
 
-        $response = $this->actingAs($user, 'sanctum')->getJson("/api/v1/tasks?category_id={$category->id}");
+        $response = $this->actingAs($user, 'sanctum')
+            ->getJson("/api/v1/tasks?category_id={$category->id}");
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
@@ -309,10 +325,19 @@ class TaskTest extends TestCase
     public function test_index_can_search_by_title()
     {
         $user = User::factory()->create();
-        Task::factory()->create(['user_id' => $user->id, 'title' => 'Learn Laravel 11']);
-        Task::factory()->create(['user_id' => $user->id, 'title' => 'Read a book']);
 
-        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks?search=Laravel');
+        Task::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'Learn Laravel 11',
+        ]);
+
+        Task::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'Read a book',
+        ]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/tasks?search=Laravel');
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
@@ -322,10 +347,19 @@ class TaskTest extends TestCase
     public function test_index_can_search_by_description()
     {
         $user = User::factory()->create();
-        Task::factory()->create(['user_id' => $user->id, 'description' => 'Fix the bug in the system']);
-        Task::factory()->create(['user_id' => $user->id, 'description' => 'Write documentation']);
 
-        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks?search=bug');
+        Task::factory()->create([
+            'user_id' => $user->id,
+            'description' => 'Fix the bug in the system',
+        ]);
+
+        Task::factory()->create([
+            'user_id' => $user->id,
+            'description' => 'Write documentation',
+        ]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/tasks?search=bug');
 
         $response->assertStatus(200)
             ->assertJsonCount(1, 'data')
@@ -335,21 +369,35 @@ class TaskTest extends TestCase
     public function test_index_respects_sort_by_and_direction()
     {
         $user = User::factory()->create();
-        Task::factory()->create(['user_id' => $user->id, 'title' => 'B Task']);
-        Task::factory()->create(['user_id' => $user->id, 'title' => 'A Task']);
 
-        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks?sort_by=title&sort_direction=asc');
+        Task::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'B Task',
+        ]);
+
+        Task::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'A Task',
+        ]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/tasks?sort_by=title&sort_direction=asc');
 
         $response->assertStatus(200);
+
         $this->assertEquals('A Task', $response->json('data.0.title'));
     }
 
     public function test_index_respects_pagination_per_page()
     {
         $user = User::factory()->create();
-        Task::factory()->count(10)->create(['user_id' => $user->id]);
 
-        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks?per_page=5');
+        Task::factory(10)->create([
+            'user_id' => $user->id,
+        ]);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/tasks?per_page=5');
 
         $response->assertStatus(200)
             ->assertJsonCount(5, 'data');
@@ -369,7 +417,8 @@ class TaskTest extends TestCase
             'due_date' => '2026-09-24',
         ]);
 
-        $response = $this->actingAs($user, 'sanctum')->getJson('/api/v1/tasks');
+        $response = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/tasks');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -379,7 +428,12 @@ class TaskTest extends TestCase
                     '*' => [
                         'id',
                         'title',
+                        'description',
                         'status',
+                        'due_date',
+                        'categories',
+                        'created_at',
+                        'updated_at',
                     ],
                 ],
                 'links',
@@ -393,6 +447,9 @@ class TaskTest extends TestCase
         $this->assertIsString($data['description']);
         $this->assertIsString($data['status']);
         $this->assertIsString($data['due_date']);
+        $this->assertIsArray($data['categories']);
+        $this->assertIsString($data['created_at']);
+        $this->assertIsString($data['updated_at']);
     }
 
     public function test_it_filters_tasks_by_status_search_and_category_together()
