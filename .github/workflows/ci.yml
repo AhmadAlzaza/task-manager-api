@@ -69,6 +69,8 @@ jobs:
           APP_DEBUG=false
           APP_URL=http://localhost:8000
 
+          APP_IMAGE=task-manager-api:ci
+
           APP_LOCALE=en
           APP_FALLBACK_LOCALE=en
           APP_FAKER_LOCALE=en_US
@@ -121,7 +123,7 @@ jobs:
           context: .
           file: ./Dockerfile
           load: true
-          tags: task-manager-api:phase-8-6
+          tags: task-manager-api:ci
           build-args: |
             DOCS_BASE_URL=http://localhost:8000
 

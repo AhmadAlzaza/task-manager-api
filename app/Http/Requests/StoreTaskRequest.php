@@ -29,7 +29,7 @@ class StoreTaskRequest extends FormRequest
             ],
             'due_date' => 'nullable|date',
             'categories' => 'sometimes|array',
-            'categories.*' => 'exists:categories,id',
+            'categories.*' => 'integer|distinct|exists:categories,id',
         ];
     }
 }

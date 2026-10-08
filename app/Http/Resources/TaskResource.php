@@ -14,6 +14,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $description
  * @property TaskStatus $status
  * @property Carbon|null $due_date
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property User $user
  */
 class TaskResource extends JsonResource
@@ -33,6 +35,8 @@ class TaskResource extends JsonResource
             'due_date' => $this->due_date,
             'user_name' => $this->whenLoaded('user', fn () => $this->user->name),
             'categories' => CategoryResource::collection($this->whenLoaded('categories')),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }
