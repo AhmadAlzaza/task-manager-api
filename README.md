@@ -71,12 +71,48 @@ Controllers
 - **Controllers** — handle HTTP requests and responses
 - **Form Requests** — validate incoming request data
 - **Actions** — encapsulate business operations and transactions
-- **Policies** — enforce authorization and task ownership
+- **Policies** — enforce authorization and resource ownership
 - **Enums** — provide type-safe status and role values
 - **Query Objects** — encapsulate task listing, filtering, searching, sorting, and pagination
 - **API Resources** — provide consistent JSON responses
+- **Observers** — handle model-level side effects such as cache invalidation
 - **Events / Listeners / Jobs** — coordinate asynchronous workflows
 - **Rate Limiting** — protect authentication and API endpoints
+
+## Design Decisions & Known Limitations
+
+This project intentionally favors simple, maintainable solutions over premature complexity.
+
+### Design Decisions
+
+- **Policy-based authorization**
+  Authorization is implemented through Laravel Policies rather than custom permission gates. This keeps authorization rules close to the models they protect and provides a consistent approach across resources.
+
+- **Observer-based cache invalidation**
+  Category cache invalidation is handled by an Eloquent Observer instead of individual controllers. This keeps cache consistency independent from the HTTP layer and ensures the same behavior when categories are modified from other application contexts.
+
+- **Query Object for task listing**
+  Task filtering, searching, sorting, and pagination are encapsulated in `TaskQuery`. This keeps controllers focused on HTTP concerns and makes the query logic easier to test and evolve.
+
+- **Database transactions for multi-step operations**
+  Operations that modify multiple related records are wrapped in transactions so partial failures do not leave inconsistent data.
+
+- **Stateless bearer-token authentication**
+  The API uses Laravel Sanctum personal access tokens. The current logout behavior revokes only the token used by the current request, allowing other active sessions or devices to remain authenticated.
+
+### Known Limitations
+
+- **Search uses SQL `LIKE`**
+  Task search currently performs substring matching against the title and description using `LIKE '%term%'`. This is intentionally simple and appropriate for the current project scope, but it is not a full-text search solution and may become less efficient as the dataset grows.
+
+- **Token lifecycle is intentionally simple**
+  Issued Sanctum tokens expire after 24 hours. The application does not currently enforce a maximum number of active tokens per user or provide device/session management. A future production system could add token rotation, explicit session management, or per-user token limits depending on requirements.
+
+- **SQLite for tests and MySQL in production**
+  Automated tests use SQLite for speed and isolation, while the production environment uses MySQL 8.0. This keeps the test suite lightweight, but database-specific behavior should still be verified against MySQL before major production changes.
+
+- **Single application instance**
+  The current Docker deployment is designed as a production-oriented single-host setup rather than a horizontally scaled architecture. Running multiple application instances would require additional infrastructure and considerations such as shared cache, centralized logs, and load balancing.
 
 ## API
 
@@ -204,9 +240,9 @@ When debug mode is disabled, internal exception details are not exposed to API c
 
 Authentication is implemented using Laravel Sanctum personal access tokens.
 
-Authorization is enforced through Laravel Policies and a dedicated category-management gate.
+Authorization is enforced through Laravel Policies.
 
-### Task ownership
+### Task Ownership
 
 Users can only view, update, and delete their own tasks.
 
@@ -216,7 +252,7 @@ Attempting to access another user's task returns:
 403 Forbidden
 ```
 
-### Category management
+### Category Management
 
 Category creation, update, and deletion are restricted to users with the `admin` role.
 
@@ -347,12 +383,13 @@ The test suite covers:
 - Sorting and pagination
 - Database transaction behavior
 - Mass-assignment protection
+- Category cache behavior
 
 The current suite contains:
 
 ```text
-69 tests
-205 assertions
+78 tests
+231 assertions
 ```
 
 ## Code Quality
@@ -492,6 +529,7 @@ app/
 ├── Listeners/
 ├── Mail/
 ├── Models/
+├── Observers/
 ├── Policies/
 ├── Providers/
 ├── Queries/
@@ -550,6 +588,7 @@ Validation
 Database design
 Query optimization
 Transactions
+Cache management
 Queue processing
 Rate limiting
 CORS
