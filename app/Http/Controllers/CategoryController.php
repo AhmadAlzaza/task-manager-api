@@ -16,13 +16,11 @@ class CategoryController extends Controller
 {
     use ApiResponse;
 
-    private const CACHE_KEY = 'categories.all';
-
     private const CACHE_TTL = 3600;
 
     public function index()
     {
-        $categories = Cache::remember(self::CACHE_KEY, self::CACHE_TTL, function () {
+        $categories = Cache::remember(Category::CACHE_KEY, self::CACHE_TTL, function () {
             return Category::orderBy('name')->get();
         });
 
@@ -34,8 +32,6 @@ class CategoryController extends Controller
         $this->authorize('create', Category::class);
 
         $category = Category::create($request->validated());
-
-        Cache::forget(self::CACHE_KEY);
 
         return $this->resourceResponse(new CategoryResource($category), 'Category created successfully', 201);
     }
@@ -51,8 +47,6 @@ class CategoryController extends Controller
 
         $category->update($request->validated());
 
-        Cache::forget(self::CACHE_KEY);
-
         return $this->resourceResponse(new CategoryResource($category), 'Category updated successfully');
     }
 
@@ -61,8 +55,6 @@ class CategoryController extends Controller
         $this->authorize('delete', $category);
 
         $category->delete();
-
-        Cache::forget(self::CACHE_KEY);
 
         return $this->successResponse(null, 'Category deleted successfully');
     }
