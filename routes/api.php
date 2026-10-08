@@ -16,10 +16,14 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
 
         Route::apiResource('tasks', TaskController::class);
-        Route::apiResource('categories', CategoryController::class)->only(['index', 'show']);
 
-        Route::middleware('can:manage-categories')->group(function () {
-            Route::apiResource('categories', CategoryController::class)->only(['store', 'update', 'destroy']);
-        });
+        Route::apiResource('categories', CategoryController::class)
+            ->only([
+                'index',
+                'show',
+                'store',
+                'update',
+                'destroy',
+            ]);
     });
 });

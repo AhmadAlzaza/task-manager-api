@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Category;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class CategoryTest extends TestCase
@@ -131,5 +132,38 @@ class CategoryTest extends TestCase
         $response->assertStatus(403);
 
         $this->assertDatabaseHas('categories', ['id' => $category->id]);
+    }
+
+    public function test_category_creation_invalidates_cache(): void
+    {
+        Cache::put(Category::CACHE_KEY, 'cached');
+
+        Category::factory()->create();
+
+        $this->assertFalse(Cache::has(Category::CACHE_KEY));
+    }
+
+    public function test_category_update_invalidates_cache(): void
+    {
+        $category = Category::factory()->create();
+
+        Cache::put(Category::CACHE_KEY, 'cached');
+
+        $category->update([
+            'name' => 'Updated Category',
+        ]);
+
+        $this->assertFalse(Cache::has(Category::CACHE_KEY));
+    }
+
+    public function test_category_deletion_invalidates_cache(): void
+    {
+        $category = Category::factory()->create();
+
+        Cache::put(Category::CACHE_KEY, 'cached');
+
+        $category->delete();
+
+        $this->assertFalse(Cache::has(Category::CACHE_KEY));
     }
 }
